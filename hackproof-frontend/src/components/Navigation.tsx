@@ -33,15 +33,37 @@ export default function Navigation() {
             </nav>
         )
     }
-    
+
     return (
         <nav className="w-full border-b border-foreground/10 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
-                    <div className="flex items-center gap-8">
-                        <Link href="/" className="text-xl font-bold hover:opacity-80 transition-opacity">
+                    <div className="flex items-center gap-6 sm:gap-8">
+                        <Link href="/" className="text-xl font-bold hover:opacity-80 transition-opacity flex items-center">
                             🚀 HackProof
                         </Link>
+                        {connected && (
+                            <div className="hidden md:flex items-center gap-4 h-full">
+                                <Link
+                                    href="/projects"
+                                    className="text-sm font-medium hover:text-green-400 transition-colors flex items-center h-full"
+                                >
+                                    Projects
+                                </Link>
+                                <Link
+                                    href="/leaderboard"
+                                    className="text-sm font-medium hover:text-green-400 transition-colors flex items-center h-full"
+                                >
+                                    Leaderboard
+                                </Link>
+                                <Link
+                                    href="/submit"
+                                    className="text-sm font-medium hover:text-green-400 transition-colors flex items-center h-full"
+                                >
+                                    Submit
+                                </Link>
+                            </div>
+                        )}
                     </div>
                     <div className="flex items-center gap-4">
                         <WalletMultiButton className="!bg-blue-600 !text-white !rounded-lg !px-4 !py-2 !font-semibold hover:!bg-blue-700 transition-all" />
