@@ -43,41 +43,45 @@ export default function Home() {
 
             {/* Flow Steps - Mobile friendly with arrows */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 md:gap-8 mb-6 sm:mb-8">
-              <div className="flex flex-col items-center space-y-2 flex-1 max-w-[180px] sm:max-w-[200px]">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-blue-500/20 flex items-center justify-center text-xl sm:text-2xl">
+              {/* Step 1 */}
+              <div className="flex flex-col items-center flex-1 max-w-[180px] sm:max-w-[200px]">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-blue-500/20 flex items-center justify-center text-xl sm:text-2xl mb-3">
                   🔗
                 </div>
-                <p className="text-xs sm:text-sm md:text-base text-center font-medium">Connect Wallet</p>
+                <p className="text-xs sm:text-sm md:text-base text-center font-medium min-h-[2.5rem] flex items-center justify-center">Connect Wallet</p>
               </div>
 
-              <div className="hidden sm:block text-xl sm:text-2xl text-foreground/30">↓</div>
+              <div className="hidden sm:block text-xl sm:text-2xl text-foreground/30">→</div>
               <div className="sm:hidden text-xl text-foreground/30">↓</div>
 
-              <div className="flex flex-col items-center space-y-2 flex-1 max-w-[180px] sm:max-w-[200px]">
-                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xl sm:text-2xl ${connected ? 'bg-green-500/20' : 'bg-foreground/10'}`}>
+              {/* Step 2 */}
+              <div className="flex flex-col items-center flex-1 max-w-[180px] sm:max-w-[200px]">
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xl sm:text-2xl mb-3 ${connected ? 'bg-green-500/20' : 'bg-foreground/10'}`}>
                   ✅
                 </div>
-                <p className="text-xs sm:text-sm md:text-base text-center font-medium">Get your Participant NFT</p>
+                <p className="text-xs sm:text-sm md:text-base text-center font-medium min-h-[2.5rem] flex items-center justify-center">Get your Participant NFT</p>
               </div>
 
-              <div className="hidden sm:block text-xl sm:text-2xl text-foreground/30">↓</div>
+              <div className="hidden sm:block text-xl sm:text-2xl text-foreground/30">→</div>
               <div className="sm:hidden text-xl text-foreground/30">↓</div>
 
-              <div className="flex flex-col items-center space-y-2 flex-1 max-w-[180px] sm:max-w-[200px]">
-                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xl sm:text-2xl ${connected ? 'bg-green-500/20' : 'bg-foreground/10'}`}>
+              {/* Step 3 */}
+              <div className="flex flex-col items-center flex-1 max-w-[180px] sm:max-w-[200px]">
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xl sm:text-2xl mb-3 ${connected ? 'bg-green-500/20' : 'bg-foreground/10'}`}>
                   ✅
                 </div>
-                <p className="text-xs sm:text-sm md:text-base text-center font-medium">Receive 100 voting tokens</p>
+                <p className="text-xs sm:text-sm md:text-base text-center font-medium min-h-[2.5rem] flex items-center justify-center">Receive 100 voting tokens</p>
               </div>
 
-              <div className="hidden sm:block text-xl sm:text-2xl text-foreground/30">↓</div>
+              <div className="hidden sm:block text-xl sm:text-2xl text-foreground/30">→</div>
               <div className="sm:hidden text-xl text-foreground/30">↓</div>
 
-              <div className="flex flex-col items-center space-y-2 flex-1 max-w-[180px] sm:max-w-[200px]">
-                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xl sm:text-2xl ${connected ? 'bg-green-500/20' : 'bg-foreground/10'}`}>
+              {/* Step 4 */}
+              <div className="flex flex-col items-center flex-1 max-w-[180px] sm:max-w-[200px]">
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xl sm:text-2xl mb-3 ${connected ? 'bg-green-500/20' : 'bg-foreground/10'}`}>
                   ✅
                 </div>
-                <p className="text-xs sm:text-sm md:text-base text-center font-medium">Start voting immediately</p>
+                <p className="text-xs sm:text-sm md:text-base text-center font-medium min-h-[2.5rem] flex items-center justify-center">Start voting immediately</p>
               </div>
             </div>
 
