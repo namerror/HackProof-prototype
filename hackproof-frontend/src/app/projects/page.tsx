@@ -15,14 +15,22 @@ export default function ProjectsGalleryPage() {
                         <h1 className="text-4xl sm:text-5xl font-bold mb-2">Project Gallery</h1>
                         <p className="text-foreground/70">Browse all submitted hackathon projects</p>
                     </div>
-                    {connected && (
+                    <div className="flex gap-3">
                         <Link
-                            href="/submit"
-                            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-500 hover:to-blue-600 transition-all shadow-xl hover:shadow-2xl border border-blue-500/50 hover:scale-105"
+                            href="/leaderboard"
+                            className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-xl font-semibold hover:from-yellow-500 hover:to-yellow-600 transition-all shadow-xl hover:shadow-2xl border border-yellow-500/50 hover:scale-105"
                         >
-                            + Submit Project
+                            🏆 Leaderboard
                         </Link>
-                    )}
+                        {connected && (
+                            <Link
+                                href="/submit"
+                                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-500 hover:to-blue-600 transition-all shadow-xl hover:shadow-2xl border border-blue-500/50 hover:scale-105"
+                            >
+                                + Submit Project
+                            </Link>
+                        )}
+                    </div>
                 </div>
 
                 {projects.length === 0 ? (
