@@ -35,5 +35,28 @@ Some frontend work needs to be done:
 - Project info (name, description etc.)
 - voting button
 - QR Code
-
 ...
+
+Storage Tasks:
+
+1. NFT METADATA TEMPLATES
+   - Create JSON templates for Participant NFTs
+   - Create JSON templates for Project NFTs  
+   - Create JSON templates for Achievement NFTs // don't do this yet
+
+2. IPFS UPLOAD SERVICE
+   - Build function: uploadParticipantMetadata(name, skills) → returns IPFS_CID
+   - Build function: uploadProjectMetadata(name, description, team, repo) → returns IPFS_CID
+   - Build function: uploadAchievementMetadata(type, description) → returns IPFS_CID // optional
+
+3. IMAGE ASSETS
+   - Create Participant NFT badge image
+   - Create Project NFT placeholder image
+//   - Create Achievement badge images
+
+4. STORAGE SETUP
+   - Set up NFT.Storage or Pinata account
+   - Test upload/download flows
+   - Provide CIDs for Solana program integration
+
+TOOLS: NFT.Storage (free), Pinata (free tier), image editing software
