@@ -22,4 +22,18 @@ Some frontend work needs to be done:
 - "Mint Participant NFT" button
 - Show success after minting
 
-...More to come
+3. Project Registration Page ('/submit')
+- Form: Project name, description, team members, GitHub link
+- "Submit Project" button
+- Show generated QR code after submission // dw about this yet
+
+4. Project Gallery ('/projects')
+- grid of project cards
+- scrolling
+
+5. Project Page ('/project')
+- Project info (name, description etc.)
+- voting button
+- QR Code
+
+...
