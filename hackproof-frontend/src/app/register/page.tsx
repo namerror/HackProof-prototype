@@ -149,7 +149,7 @@ export default function RegisterPage() {
                                 type="submit"
                                 onClick={handleMintNFT}
                                 disabled={isMinting || !formData.name || !formData.project || !formData.description}
-                                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center justify-center gap-2"
+                                className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold shadow-xl hover:shadow-2xl hover:from-blue-500 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-xl flex items-center justify-center gap-2 border border-blue-500/50"
                             >
                                 {isMinting ? (
                                     <>
