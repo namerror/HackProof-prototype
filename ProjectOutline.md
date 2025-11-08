@@ -38,16 +38,17 @@
 ## 🏗️ Project Architecture
 
 ### Project Structure
-  hackproof-solana/
-  ├── programs/ # Solana programs
-  │ └── hackproof/ # Main voting program
-  ├── app/ # Next.js frontend
-  │ ├── components/ # Reusable components
-  │ ├── pages/ # App pages
-  │ ├── hooks/ # Custom Solana hooks
-  │ └── utils/ # Utilities
-  ├── scripts/ # Deployment scripts
-  └── tests/ # Program tests
+
+	  hackproof-solana/
+	  ├── programs/ # Solana programs
+	  │ └── hackproof/ # Main voting program
+	  ├── app/ # Next.js frontend
+	  │ ├── components/ # Reusable components
+	  │ ├── pages/ # App pages
+	  │ ├── hooks/ # Custom Solana hooks
+	  │ └── utils/ # Utilities
+	  ├── scripts/ # Deployment scripts
+	  └── tests/ # Program tests
 
   
 ### Tech Stack (100% Free)
@@ -157,16 +158,16 @@ Basic page structure
 - wow features
 - Enhanced demo
 
---
+---
 # User Onboarding
 
-  🎪 "Web3 Onboarding Station"
-  ├── 2 laptops with helpers
-  ├── Printed QR codes everywhere
-  ├── Wallet setup instructions
-  └── SOL faucet station
+	  🎪 "Web3 Onboarding Station"
+	  ├── 2 laptops with helpers
+	  ├── Printed QR codes everywhere
+	  ├── Wallet setup instructions
+	  └── SOL faucet station
 
-  // In app:
+### In App
   1. Wallet detection → Show install guide if missing
   2. Auto-connect to Devnet
   3. One-click registration
