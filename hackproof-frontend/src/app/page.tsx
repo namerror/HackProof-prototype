@@ -23,17 +23,17 @@ export default function Home() {
     <main className="min-h-screen flex flex-col items-center justify-center px-4 py-8 sm:py-12">
       <div className="max-w-4xl w-full space-y-8 sm:space-y-12">
         {/* Welcome Section - Todo: 🚀 Welcome to HackProof! 📊 Live voting for hackathons */}
-        <div className="text-center space-y-3 sm:space-y-4">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight">
+        <div className="text-center space-y-4 sm:space-y-6">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight">
             🚀 Welcome to HackProof!
           </h1>
-          <p className="text-xl sm:text-2xl md:text-3xl text-foreground/70">
+          <p className="text-xl sm:text-2xl md:text-3xl text-foreground/80 font-medium">
             📊 Decentralized Live voting for hackathons
           </p>
         </div>
 
         {/* Wallet Connection Flow - Todo: 🔗 Connect Your Wallet ↓ ✅ Get your Participant NFT ✅ Receive 100 voting tokens ✅ Start voting immediately */}
-        <div className="bg-background/80 backdrop-blur-sm border border-foreground/10 rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-12 shadow-xl">
+        <div className="bg-background/80 backdrop-blur-sm border border-white/10 rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-12 shadow-2xl">
           <div className="space-y-6 sm:space-y-8">
             <div className="text-center">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold mb-2">
@@ -95,15 +95,23 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Registration Link - Shows when wallet is connected */}
+            {/* Action Links - Shows when wallet is connected */}
             {connected && (
-              <div className="text-center pt-4">
-                <Link
-                  href="/register"
-                  className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl hover:bg-blue-700 transition-all hover:scale-105 active:scale-95"
-                >
-                  Register for Hackathon →
-                </Link>
+              <div className="text-center pt-4 space-y-3">
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link
+                    href="/register"
+                    className="inline-block px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold shadow-xl hover:shadow-2xl hover:from-blue-500 hover:to-blue-600 transition-all hover:scale-105 active:scale-95 border border-blue-500/50"
+                  >
+                    Register for Hackathon →
+                  </Link>
+                  <Link
+                    href="/projects"
+                    className="inline-block px-8 py-4 bg-white/5 backdrop-blur-sm text-white rounded-xl font-semibold shadow-xl hover:shadow-2xl hover:bg-white/10 transition-all hover:scale-105 active:scale-95 border border-white/10"
+                  >
+                    View Projects
+                  </Link>
+                </div>
               </div>
             )}
           </div>
