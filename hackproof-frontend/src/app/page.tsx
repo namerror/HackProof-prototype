@@ -111,6 +111,12 @@ export default function Home() {
                   >
                     View Projects
                   </Link>
+                  <Link
+                    href="/leaderboard"
+                    className="inline-block px-8 py-4 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-xl font-semibold shadow-xl hover:shadow-2xl hover:from-yellow-500 hover:to-yellow-600 transition-all hover:scale-105 active:scale-95 border border-yellow-500/50"
+                  >
+                    🏆 Leaderboard
+                  </Link>
                 </div>
               </div>
             )}

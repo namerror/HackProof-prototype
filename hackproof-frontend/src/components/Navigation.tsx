@@ -46,13 +46,19 @@ export default function Navigation() {
                             <div className="hidden md:flex items-center gap-4">
                                 <Link
                                     href="/projects"
-                                    className="text-sm font-medium hover:text-blue-600 transition-colors"
+                                    className="text-sm font-medium hover:text-green-400 transition-colors"
                                 >
                                     Projects
                                 </Link>
                                 <Link
+                                    href="/leaderboard"
+                                    className="text-sm font-medium hover:text-green-400 transition-colors"
+                                >
+                                    Leaderboard
+                                </Link>
+                                <Link
                                     href="/submit"
-                                    className="text-sm font-medium hover:text-blue-600 transition-colors"
+                                    className="text-sm font-medium hover:text-green-400 transition-colors"
                                 >
                                     Submit
                                 </Link>
