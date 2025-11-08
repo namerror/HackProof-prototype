@@ -2,10 +2,23 @@
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
 export default function Home() {
   const { connected } = useWallet()
+  const [mounted, setMounted] = useState(false)
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <div>Loading...</div>
+      </main>
+    )
+  }
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-4 py-8 sm:py-12">
       <div className="max-w-4xl w-full space-y-8 sm:space-y-12">
@@ -15,7 +28,7 @@ export default function Home() {
             🚀 Welcome to HackProof!
           </h1>
           <p className="text-xl sm:text-2xl md:text-3xl text-foreground/70">
-            📊 Live voting for hackathons
+            📊 Decentralized Live voting for hackathons
           </p>
         </div>
 
