@@ -39,26 +39,26 @@ export default function Navigation() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     <div className="flex items-center gap-6 sm:gap-8">
-                        <Link href="/" className="text-xl font-bold hover:opacity-80 transition-opacity">
+                        <Link href="/" className="text-xl font-bold hover:opacity-80 transition-opacity flex items-center">
                             🚀 HackProof
                         </Link>
                         {connected && (
-                            <div className="hidden md:flex items-center gap-4">
+                            <div className="hidden md:flex items-center gap-4 h-full">
                                 <Link
                                     href="/projects"
-                                    className="text-sm font-medium hover:text-green-400 transition-colors"
+                                    className="text-sm font-medium hover:text-green-400 transition-colors flex items-center h-full"
                                 >
                                     Projects
                                 </Link>
                                 <Link
                                     href="/leaderboard"
-                                    className="text-sm font-medium hover:text-green-400 transition-colors"
+                                    className="text-sm font-medium hover:text-green-400 transition-colors flex items-center h-full"
                                 >
                                     Leaderboard
                                 </Link>
                                 <Link
                                     href="/submit"
-                                    className="text-sm font-medium hover:text-green-400 transition-colors"
+                                    className="text-sm font-medium hover:text-green-400 transition-colors flex items-center h-full"
                                 >
                                     Submit
                                 </Link>
