@@ -28,7 +28,7 @@ export default function Home() {
             🚀 Welcome to HackProof!
           </h1>
           <p className="text-xl sm:text-2xl md:text-3xl text-foreground/80 font-medium">
-            📊 Decentralized Live voting for hackathons
+            📊 Decentralized Live Voting for Hackathons
           </p>
         </div>
 
