@@ -1,0 +1,25 @@
+Some frontend work needs to be done:
+
+1. Fix basic layout and make a start page:
+- File: `app/layout.tsx` and `app/page.tsx`
+- Clean up the current layout structure
+- Ensure proper HTML tags and responsive design
+- Make it mobile friendly
+
+🚀 Welcome to HackProof!
+📊 Live voting for hackathons
+
+🔗 Connect Your Wallet
+   ↓
+✅ Get your Participant NFT
+✅ Receive 100 voting tokens  
+✅ Start voting immediately
+
+[ Connect Wallet Button ] // already included in the frontend but needs polish
+
+2. Registration Page ('/register')
+- Simple registration requiring Name, Project, brief description
+- "Mint Participant NFT" button
+- Show success after minting
+
+...More to come
