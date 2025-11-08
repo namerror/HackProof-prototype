@@ -18,7 +18,7 @@ export default function ProjectsGalleryPage() {
                     <div className="flex gap-3">
                         <Link
                             href="/leaderboard"
-                            className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-xl font-semibold hover:from-yellow-500 hover:to-yellow-600 transition-all shadow-xl hover:shadow-2xl border border-yellow-500/50 hover:scale-105"
+                            className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-xl font-semibold hover:from-yellow-500 hover:to-yellow-600 transition-all shadow-xl hover:shadow-2xl border border-yellow-500/50 hover:scale-105 flex items-center justify-center"
                         >
                             🏆 Leaderboard
                         </Link>
