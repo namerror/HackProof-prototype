@@ -1,6 +1,6 @@
 'use client'
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
-import { IPFSClient, createProjectMetadata, ProjectMetadata } from '@shared'
+// Removed IPFS dependencies - everything is on-chain now
 import { PublicKey } from '@solana/web3.js'
 import { createProjectOnChain, voteOnProjectOnChain, fetchAllProjects } from '@/services/solana-integration'
 import { HACKPROOF_PROGRAM_ID } from '@/contexts/WalletContext'
@@ -56,45 +56,15 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
     const [projects, setProjects] = useState<Project[]>([])
     const { connection } = useConnection()
     const wallet = useWallet()
-    // Lazy-initialize IPFS client - only create when needed
-    const getClient = useCallback(() => new IPFSClient(), [])
+    // Removed IPFS client - we're using on-chain storage only
 
     const loadProjectMetadata = useCallback(async (projectId: string) => {
-        // Use functional update to get current projects state
-        setProjects(prev => {
-            const project = prev.find(p => p.id === projectId)
-            if (!project || project.cachedMetadata) return prev
-
-            // Load metadata asynchronously
-            const client = getClient()
-            client.getMetadata(project.metadataCid)
-                .then((metadata: ProjectMetadata) => {
-                    setProjects(current =>
-                        current.map(p =>
-                            p.id === projectId
-                                ? {
-                                    ...p,
-                                    cachedMetadata: {
-                                        name: metadata.name.replace('HackProof Project: ', ''),
-                                        description: metadata.description,
-                                        teamMembers: metadata.properties.teamMembers,
-                                        githubRepo: metadata.properties.githubRepo,
-                                        image: metadata.image
-                                    }
-                                }
-                                : p
-                        )
-                    )
-                })
-                .catch(error => {
-                    console.error('Failed to load project metadata from IPFS:', error)
-                })
-
-            return prev
-        })
+        // Metadata is loaded from on-chain data, no IPFS needed
+        // This function is kept for compatibility but does nothing
+        console.log('loadProjectMetadata called for', projectId, '- metadata loaded from blockchain')
     }, [])
 
-    // Fetch all projects from blockchain and load metadata from IPFS
+    // Fetch all projects from blockchain (on-chain data only)
     const loadAllProjects = useCallback(async () => {
         try {
             console.log('Fetching all projects from Solana blockchain...')
@@ -121,76 +91,28 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
             }
 
             console.log(`Found ${blockchainProjects.length} projects on blockchain`)
-            const client = getClient()
             
-            // Convert blockchain projects to our Project format
-            const projectsWithMetadata: Project[] = await Promise.all(
-                blockchainProjects.map(async (bp) => {
-                    // Extract IPFS CID from submissionUri
-                    // submissionUri format: https://gateway.pinata.cloud/ipfs/{cid}
-                    let metadataCid = ''
-                    if (bp.submissionUri) {
-                        const match = bp.submissionUri.match(/ipfs\/([a-zA-Z0-9]+)/)
-                        if (match) {
-                            metadataCid = match[1]
-                        }
-                    }
-                    
-                    // Try to find metadata CID in localStorage (for projects created but not yet submitted)
-                    // Check if we have this project in localStorage with metadata
-                    let cachedMetadata: Project['cachedMetadata'] | undefined
-                    const stored = localStorage.getItem('hackproof-project-cids')
-                    if (stored) {
-                        try {
-                            const localProjects: Project[] = JSON.parse(stored)
-                            const localProject = localProjects.find(p => p.projectPda === bp.projectPda || p.owner === bp.creator)
-                            if (localProject && localProject.cachedMetadata) {
-                                cachedMetadata = localProject.cachedMetadata
-                                metadataCid = localProject.metadataCid
-                            }
-                        } catch (e) {
-                            // Ignore localStorage parse errors
-                        }
-                    }
-                    
-                    // If we have a metadata CID, try to load from IPFS
-                    if (metadataCid && !cachedMetadata) {
-                        try {
-                            const metadata = await client.getMetadata(metadataCid) as ProjectMetadata
-                            cachedMetadata = {
-                                name: metadata.name.replace('HackProof Project: ', ''),
-                                description: metadata.description,
-                                teamMembers: metadata.properties.teamMembers || [],
-                                githubRepo: metadata.properties.githubRepo || bp.githubRepo,
-                                image: metadata.image
-                            }
-                        } catch (error) {
-                            console.error(`Failed to load metadata for project ${bp.name}:`, error)
-                        }
-                    }
-                    
-                    // Use on-chain data as fallback if no metadata loaded
-                    if (!cachedMetadata) {
-                        cachedMetadata = {
-                            name: bp.name,
-                            description: bp.description,
-                            teamMembers: [],
-                            githubRepo: bp.githubRepo,
-                            image: '' // No image from on-chain data
-                        }
-                    }
-                    
-                    return {
-                        id: bp.projectPda, // Use PDA as ID
-                        metadataCid: metadataCid || bp.projectPda, // Use PDA if no CID
-                        votes: bp.totalVotesReceived,
-                        owner: bp.creator,
-                        createdAt: bp.createdAt * 1000, // Convert to milliseconds
-                        projectPda: bp.projectPda,
-                        cachedMetadata
-                    }
-                })
-            )
+            // Convert blockchain projects to our Project format using on-chain data only
+            const projectsWithMetadata: Project[] = blockchainProjects.map((bp) => {
+                // Use on-chain data directly - no IPFS needed
+                const cachedMetadata: Project['cachedMetadata'] = {
+                    name: bp.name,
+                    description: bp.description,
+                    teamMembers: [], // Team members not stored on-chain in current version
+                    githubRepo: bp.githubRepo,
+                    image: '' // No image stored on-chain
+                }
+                
+                return {
+                    id: bp.projectPda, // Use PDA as ID
+                    metadataCid: bp.projectPda, // Use PDA as metadata CID (on-chain identifier)
+                    votes: bp.totalVotesReceived,
+                    owner: bp.creator,
+                    createdAt: bp.createdAt * 1000, // Convert to milliseconds
+                    projectPda: bp.projectPda,
+                    cachedMetadata
+                }
+            })
             
             setProjects(projectsWithMetadata)
             console.log(`Loaded ${projectsWithMetadata.length} projects with metadata`)
@@ -212,7 +134,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
                 }
             }
         }
-    }, [connection, wallet.wallet, getClient, loadProjectMetadata])
+    }, [connection, wallet.wallet, loadProjectMetadata])
 
     // Load all projects on mount and when connection changes
     useEffect(() => {
@@ -280,104 +202,45 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         }
 
         try {
-            const client = getClient()
-            // Step 1: Upload project placeholder image to IPFS
-            let imageBlob: Blob
-            try {
-                // Try to use the actual project placeholder image if available
-                const projectImagePath = '/project-placeholder.png'
-                const imageResponse = await fetch(projectImagePath)
-                if (imageResponse.ok) {
-                    imageBlob = await imageResponse.blob()
-                } else {
-                    throw new Error('Project image not found')
-                }
-            } catch (error) {
-                // Fallback: Create a simple colored image using canvas
-                console.log('Creating fallback project image...')
-                const canvas = document.createElement('canvas')
-                canvas.width = 512
-                canvas.height = 512
-                const ctx = canvas.getContext('2d')
-                if (ctx) {
-                    // Draw background
-                    ctx.fillStyle = '#10B981'
-                    ctx.fillRect(0, 0, 512, 512)
-                    // Draw text
-                    ctx.fillStyle = '#FFFFFF'
-                    ctx.font = 'bold 48px Arial'
-                    ctx.textAlign = 'center'
-                    ctx.textBaseline = 'middle'
-                    ctx.fillText('HackProof', 256, 200)
-                    ctx.font = '32px Arial'
-                    ctx.fillText('Project', 256, 280)
-                }
-                imageBlob = await new Promise<Blob>((resolve) => {
-                    canvas.toBlob((blob) => {
-                        resolve(blob || new Blob())
-                    }, 'image/png')
-                })
+            // CRITICAL: Project creation must happen on-chain - no IPFS fallback
+            if (!solanaIntegration?.connection || !solanaIntegration?.wallet || !solanaIntegration?.publicKey) {
+                throw new Error('Wallet not connected. Please connect your wallet to create a project.')
             }
-            const imageCid = await client.uploadImage(imageBlob, 'project-image.png')
 
-            // Step 2: Create project metadata
-            const metadata = createProjectMetadata(
+            // Step 1: Create project on Solana blockchain (REQUIRED)
+            const publicKey = new PublicKey(solanaIntegration.publicKey)
+            const [projectPdaPubkey] = PublicKey.findProgramAddressSync(
+                [Buffer.from("project"), publicKey.toBuffer(), Buffer.from(projectData.name)],
+                HACKPROOF_PROGRAM_ID
+            )
+            
+            const txSignature = await createProjectOnChain(
+                solanaIntegration.connection,
+                solanaIntegration.wallet,
                 projectData.name,
                 projectData.description,
-                imageCid,
-                projectData.teamMembers,
-                { githubRepo: projectData.githubLink }
+                projectData.githubLink || '',
+                projectData.teamMembers.length || 1,
+                publicKey
             )
-
-            // Step 3: Upload metadata to IPFS
-            const metadataCid = await client.uploadMetadata(metadata)
-
-            // Step 4: Create project on Solana blockchain (if integration provided)
-            let projectPda: string | undefined
-            let solanaTxSignature: string | undefined
             
-            if (solanaIntegration?.connection && solanaIntegration?.wallet && solanaIntegration?.publicKey) {
-                try {
-                    const publicKey = new PublicKey(solanaIntegration.publicKey)
-                    const [projectPdaPubkey] = PublicKey.findProgramAddressSync(
-                        [Buffer.from("project"), publicKey.toBuffer(), Buffer.from(projectData.name)],
-                        HACKPROOF_PROGRAM_ID
-                    )
-                    
-                    const txSignature = await createProjectOnChain(
-                        solanaIntegration.connection,
-                        solanaIntegration.wallet,
-                        projectData.name,
-                        projectData.description,
-                        projectData.githubLink || '',
-                        projectData.teamMembers.length || 1,
-                        publicKey
-                    )
-                    
-                    projectPda = projectPdaPubkey.toString()
-                    solanaTxSignature = txSignature
-                } catch (solanaError: any) {
-                    console.error('Solana project creation failed:', solanaError)
-                    // Continue with IPFS-only project creation if Solana fails
-                    // This allows the app to work even if Solana is not initialized
-                }
-            }
+            const projectPda = projectPdaPubkey.toString()
 
-            // Step 5: Create project with IPFS CID and Solana data
+            // Step 2: Create project object with on-chain data
             const newProject: Project = {
-                id: projectPda || `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                metadataCid,
+                id: projectPda,
+                metadataCid: projectPda, // Use PDA as metadata identifier (on-chain)
                 votes: 0,
                 owner: projectData.owner,
                 createdAt: Date.now(),
                 projectPda,
-                solanaTxSignature,
+                solanaTxSignature: txSignature,
                 cachedMetadata: {
                     name: projectData.name,
                     description: projectData.description,
                     teamMembers: projectData.teamMembers,
                     githubRepo: projectData.githubLink,
-                    image: `https://gateway.pinata.cloud/ipfs/${imageCid}`
+                    image: '' // No image stored on-chain
                 }
             }
 
@@ -396,17 +259,9 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
             
             return newProject.id
         } catch (error: any) {
-            console.error('Failed to upload project to IPFS:', error)
+            console.error('Failed to create project on-chain:', error)
             const errorMessage = error?.message || 'Unknown error'
-            
-            // Provide more specific error messages
-            if (errorMessage.includes('PINATA_JWT') || errorMessage.includes('NEXT_PUBLIC_PINATA_JWT')) {
-                throw new Error('Pinata JWT Token not found. Please set NEXT_PUBLIC_PINATA_JWT in your .env.local file and restart the dev server.')
-            } else if (errorMessage.includes('401') || errorMessage.includes('403') || errorMessage.includes('Unauthorized')) {
-                throw new Error('Invalid Pinata JWT Token. Please check your NEXT_PUBLIC_PINATA_JWT in .env.local')
-            } else {
-                throw new Error(`Failed to upload project: ${errorMessage}`)
-            }
+            throw new Error(`Failed to create project on-chain: ${errorMessage}`)
         }
     }
 

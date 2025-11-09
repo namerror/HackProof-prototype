@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useWallet, useConnection, useAnchorWallet } from '@solana/wallet-adapter-react'
 import Link from 'next/link'
-import { IPFSClient, createParticipantMetadata } from '@shared'
+// Removed IPFS dependencies - everything is on-chain now
 import { useParticipant } from '@/contexts/ParticipantContext'
 import { Program, AnchorProvider } from '@project-serum/anchor'
 import { PublicKey, SystemProgram, Keypair, SYSVAR_INSTRUCTIONS_PUBKEY, SYSVAR_RENT_PUBKEY } from '@solana/web3.js'
@@ -53,7 +53,7 @@ export default function RegisterPage() {
     const [error, setError] = useState<string | null>(null)
     const [isMinting, setIsMinting] = useState(false)
     const [mintSuccess, setMintSuccess] = useState(false)
-    const [metadataCid, setMetadataCid] = useState<string | null>(null)
+    // Removed metadataCid - we're using on-chain storage only
     const [uploadProgress, setUploadProgress] = useState<string>('')
     const [txSignature, setTxSignature] = useState<string | null>(null)
 
@@ -65,14 +65,7 @@ export default function RegisterPage() {
         }))
     }
 
-    const createMetadataJson = () => {
-        return JSON.stringify({
-            name: formData.name,
-            bio: formData.bio,
-            skills: formData.skills.split(',').map(s => s.trim()).filter(Boolean),
-            created_at: new Date().toISOString()
-        })
-    }
+    // Removed createMetadataJson - we're using on-chain storage only
 
     const handleMintNFT = async () => {
         if (!connected || !publicKey || !wallet) {
@@ -94,67 +87,11 @@ export default function RegisterPage() {
         setError(null)
 
         try {
-            const client = new IPFSClient()
-            
-            // Step 1: Upload participant badge image to IPFS
-            setUploadProgress('Uploading participant badge image...')
-            
-            // Create a simple badge image using canvas (no external fetch needed)
-            let badgeBlob: Blob
-            try {
-                // Try to use the actual badge image if available
-                const badgeImagePath = '/participant-badge.png'
-                const badgeResponse = await fetch(badgeImagePath)
-                if (badgeResponse.ok) {
-                    badgeBlob = await badgeResponse.blob()
-                } else {
-                    throw new Error('Badge image not found')
-                }
-            } catch (error) {
-                // Fallback: Create a simple colored image using canvas
-                console.log('Creating fallback badge image...')
-                const canvas = document.createElement('canvas')
-                canvas.width = 512
-                canvas.height = 512
-                const ctx = canvas.getContext('2d')
-                if (ctx) {
-                    // Draw background
-                    ctx.fillStyle = '#4F46E5'
-                    ctx.fillRect(0, 0, 512, 512)
-                    // Draw text
-                    ctx.fillStyle = '#FFFFFF'
-                    ctx.font = 'bold 48px Arial'
-                    ctx.textAlign = 'center'
-                    ctx.textBaseline = 'middle'
-                    ctx.fillText('HackProof', 256, 200)
-                    ctx.font = '32px Arial'
-                    ctx.fillText('Participant', 256, 280)
-                }
-                badgeBlob = await new Promise<Blob>((resolve) => {
-                    canvas.toBlob((blob) => {
-                        resolve(blob || new Blob())
-                    }, 'image/png')
-                })
-            }
-            const badgeCid = await client.uploadImage(badgeBlob, 'participant-badge.png')
-            
-            setUploadProgress('Creating metadata...')
-            
-            // Step 2: Create participant metadata
-            const metadata = createParticipantMetadata(formData.name, badgeCid, {
-                skills: formData.skills.split(',').map(s => s.trim()).filter(Boolean)
-            })
-            
-            // Step 3: Upload metadata to IPFS
-            setUploadProgress('Uploading metadata to IPFS...')
-            const metadataCid = await client.uploadMetadata(metadata)
-            setMetadataCid(metadataCid)
-            
-            // Step 4: Get full metadata URI
-            const metadataUri = client.getMetadataUri(metadataCid)
-            
-            // Step 5: Register participant on Solana blockchain
+            // Register participant on Solana blockchain (on-chain only, no IPFS)
             setUploadProgress('Registering on Solana...')
+            
+            // Use empty string for metadata URI since we're storing everything on-chain
+            const metadataUri = ''
             let signature: string | null = null
             try {
                 if (!wallet || !publicKey) {
@@ -296,15 +233,14 @@ export default function RegisterPage() {
                 throw new Error(`Solana registration failed: ${errorMessage}`)
             }
             
-            // Step 6: Register participant locally with wallet address -> IPFS CID mapping
-            await registerParticipant(metadataCid, formData.name)
+            // Register participant locally (for UI state)
+            await registerParticipant('', formData.name) // Empty CID since we're on-chain only
             // Refresh participant state and token balance after registration
             await loadParticipantData()
             setUploadProgress('Complete!')
             setMintSuccess(true)
             
-            console.log('Metadata CID:', metadataCid)
-            console.log('Metadata URI:', metadataUri)
+            console.log('Registration successful! Transaction:', signature)
             // Optional: Force page reload to refresh Navigation token balance
             setTimeout(() => {
                 window.location.reload()
@@ -312,19 +248,7 @@ export default function RegisterPage() {
         } catch (error: any) {
             console.error('Error in registration process:', error)
             const errorMessage = error?.message || 'Unknown error occurred'
-            
-            // More specific error handling
-            if (errorMessage.includes('PINATA_JWT') || errorMessage.includes('NEXT_PUBLIC_PINATA_JWT')) {
-                alert('Pinata JWT Token not found. Please set NEXT_PUBLIC_PINATA_JWT in your .env.local file.\n\nCreate hackproof-frontend/.env.local with:\nNEXT_PUBLIC_PINATA_JWT=your_jwt_token_here\n\nThen restart your dev server.')
-            } else if (errorMessage.includes('Network error') || errorMessage.includes('Failed to fetch') || errorMessage.includes('fetch')) {
-                alert(`Network error: ${errorMessage}\n\nPossible causes:\n- Check your internet connection\n- Pinata API might be temporarily down\n- Firewall or network restrictions\n\nPlease try again in a moment.`)
-            } else if (errorMessage.includes('Invalid Pinata') || errorMessage.includes('401') || errorMessage.includes('403')) {
-                alert('Invalid Pinata JWT Token. Please verify your token at https://app.pinata.cloud/ and update .env.local')
-            } else if (errorMessage.includes('IPFS') || errorMessage.includes('upload')) {
-                alert(`Failed to upload to IPFS: ${errorMessage}\n\nPlease check your PINATA_JWT and try again.`)
-            } else {
-                alert(`Registration failed: ${errorMessage}\n\nCheck the browser console for more details.`)
-            }
+            alert(`Registration failed: ${errorMessage}\n\nCheck the browser console for more details.`)
         } finally {
             setIsMinting(false)
             setUploadProgress('')
@@ -413,36 +337,22 @@ export default function RegisterPage() {
                     <div className="text-6xl mb-4">🎉</div>
                     <h1 className="text-3xl font-bold">Success!</h1>
                     <p className="text-foreground/70">
-                        Your Participant NFT has been registered! Your metadata is stored on IPFS and registered on Solana.
+                        Your Participant NFT has been registered on Solana! You've received 100 voting tokens.
                     </p>
-                    {metadataCid && (
+                    {txSignature && (
                         <div className="text-sm text-foreground/60 pt-2 space-y-3">
                             <div>
-                                <p className="font-semibold mb-1">IPFS Metadata:</p>
-                                <code className="bg-background/50 px-2 py-1 rounded text-xs break-all block">{metadataCid}</code>
+                                <p className="font-semibold mb-1">Solana Transaction:</p>
+                                <code className="bg-background/50 px-2 py-1 rounded text-xs break-all block">{txSignature.slice(0, 20)}...</code>
                                 <a 
-                                    href={`https://gateway.pinata.cloud/ipfs/${metadataCid}`}
+                                    href={`https://solscan.io/tx/${txSignature}?cluster=devnet`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="block text-blue-400 hover:text-blue-300 underline mt-1"
                                 >
-                                    View on IPFS →
+                                    View on Solscan →
                                 </a>
                             </div>
-                            {txSignature && (
-                                <div>
-                                    <p className="font-semibold mb-1">Solana Transaction:</p>
-                                    <code className="bg-background/50 px-2 py-1 rounded text-xs break-all block">{txSignature.slice(0, 20)}...</code>
-                                    <a 
-                                        href={`https://solscan.io/tx/${txSignature}?cluster=devnet`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="block text-blue-400 hover:text-blue-300 underline mt-1"
-                                    >
-                                        View on Solscan →
-                                    </a>
-                                </div>
-                            )}
                         </div>
                     )}
                     <div className="pt-4 space-y-3">

@@ -104,7 +104,7 @@ export default function SubmitProjectPage() {
                 teamMembersList.push(publicKey.toString().slice(0, 8) + '...')
             }
 
-            // addProject now uploads to IPFS and creates on Solana
+            // addProject creates project on Solana blockchain (on-chain only)
             const id = await addProject({
                 name: formData.name.trim(),
                 description: formData.description.trim(),
@@ -126,7 +126,7 @@ export default function SubmitProjectPage() {
             }, 2000)
         } catch (error) {
             console.error('Error submitting project:', error)
-            const errorMessage = error instanceof Error ? error.message : 'Failed to submit project. Please check your PINATA_JWT and try again.'
+            const errorMessage = error instanceof Error ? error.message : 'Failed to submit project on-chain. Please check your wallet connection and try again.'
             setSubmitError(errorMessage)
         } finally {
             setIsSubmitting(false)
