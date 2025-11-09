@@ -47,8 +47,8 @@ export default function RegisterPage() {
     const { isRegistered, participant, registerParticipant } = useParticipant()
     const [formData, setFormData] = useState({
         name: '',
-        project: '',
-        description: ''
+        bio: '',
+        skills: ''
     })
     const [error, setError] = useState<string | null>(null)
     const [isMinting, setIsMinting] = useState(false)
@@ -68,8 +68,8 @@ export default function RegisterPage() {
     const createMetadataJson = () => {
         return JSON.stringify({
             name: formData.name,
-            project: formData.project,
-            description: formData.description,
+            bio: formData.bio,
+            skills: formData.skills.split(',').map(s => s.trim()).filter(Boolean),
             created_at: new Date().toISOString()
         })
     }
@@ -85,8 +85,8 @@ export default function RegisterPage() {
             return
         }
 
-        if (!formData.name || !formData.project || !formData.description) {
-            setError('Please fill in all fields')
+        if (!formData.name || !formData.bio) {
+            setError('Please fill in all required fields')
             return
         }
 
@@ -142,7 +142,7 @@ export default function RegisterPage() {
             
             // Step 2: Create participant metadata
             const metadata = createParticipantMetadata(formData.name, badgeCid, {
-                skills: [formData.project] // Using project name as a skill for now
+                skills: formData.skills.split(',').map(s => s.trim()).filter(Boolean)
             })
             
             // Step 3: Upload metadata to IPFS
@@ -404,8 +404,8 @@ export default function RegisterPage() {
         <main className="min-h-screen flex flex-col items-center justify-center px-4 py-8 sm:py-12">
             <div className="max-w-2xl w-full space-y-6 sm:space-y-8">
                 <div className="text-center">
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2">Register for Hackathon</h1>
-                    <p className="text-sm sm:text-base text-foreground/70">Fill in your details to mint your Participant NFT</p>
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2">Register as Participant</h1>
+                    <p className="text-sm sm:text-base text-foreground/70">Fill in your details to mint your Participant NFT and receive voting tokens</p>
                 </div>
 
                 <DevnetFaucet />
@@ -429,34 +429,33 @@ export default function RegisterPage() {
                         </div>
 
                         <div>
-                            <label htmlFor="project" className="block text-sm font-medium mb-2">
-                                Project Name *
+                            <label htmlFor="bio" className="block text-sm font-medium mb-2">
+                                Bio *
                             </label>
-                            <input
-                                type="text"
-                                id="project"
-                                name="project"
-                                value={formData.project}
+                            <textarea
+                                id="bio"
+                                name="bio"
+                                value={formData.bio}
                                 onChange={handleInputChange}
                                 required
-                                className="w-full px-4 py-3 rounded-lg border border-foreground/20 bg-background focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                placeholder="Enter your project name"
+                                rows={3}
+                                className="w-full px-4 py-3 rounded-lg border border-foreground/20 bg-background focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                                placeholder="Tell us about yourself..."
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="description" className="block text-sm font-medium mb-2">
-                                Project Description *
+                            <label htmlFor="skills" className="block text-sm font-medium mb-2">
+                                Skills (optional)
                             </label>
-                            <textarea
-                                id="description"
-                                name="description"
-                                value={formData.description}
+                            <input
+                                type="text"
+                                id="skills"
+                                name="skills"
+                                value={formData.skills}
                                 onChange={handleInputChange}
-                                required
-                                rows={5}
-                                className="w-full px-4 py-3 rounded-lg border border-foreground/20 bg-background focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-                                placeholder="Brief description of your project..."
+                                className="w-full px-4 py-3 rounded-lg border border-foreground/20 bg-background focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                placeholder="e.g., JavaScript, Python, Solidity (comma-separated)"
                             />
                         </div>
 
@@ -470,7 +469,7 @@ export default function RegisterPage() {
                             <button
                                 type="submit"
                                 onClick={handleMintNFT}
-                                disabled={isMinting || !formData.name || !formData.project || !formData.description}
+                                disabled={isMinting || !formData.name || !formData.bio}
                                 className="w-full px-8 py-4 bg-gradient-to-r from-[#00ff9f] to-[#00cc7f] text-[#0f0f0f] rounded-xl font-semibold shadow-xl hover:shadow-[0_0_30px_rgba(0,255,159,0.5)] hover:from-[#00cc7f] hover:to-[#00ff9f] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-xl flex items-center justify-center gap-2 border border-[#00ff9f]/50 font-mono"
                             >
                                 {isMinting ? (
