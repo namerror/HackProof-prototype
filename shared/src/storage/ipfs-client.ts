@@ -13,23 +13,11 @@ declare function fetch(input: any, init?: any): Promise<any>;
 
 // Get token from environment - works in both Node.js and browser (Next.js)
 function getPinataToken(): string {
-  console.log('NEXT_PUBLIC_PINATA_JWT:', process.env.NEXT_PUBLIC_PINATA_JWT)
-  const anyProc: any = typeof process !== 'undefined' ? process : {}
-  // Browser path (Next.js client side)
-  if (typeof window !== 'undefined') {
-    const token = (anyProc?.env?.NEXT_PUBLIC_PINATA_JWT || '') as string
-    if (!token || token.trim().length === 0) {
-      if (typeof console !== 'undefined') {
-        console.warn('NEXT_PUBLIC_PINATA_JWT not found or empty. Set it in hackproof-frontend/.env.local and restart dev server.')
-      }
-    }
-    return token
-  }
-  // Server / build path
-  const token = (anyProc?.env?.PINATA_JWT || anyProc?.env?.NEXT_PUBLIC_PINATA_JWT || '') as string
+  // Always use process.env.NEXT_PUBLIC_PINATA_JWT for browser/Next.js builds
+  const token = process.env.NEXT_PUBLIC_PINATA_JWT || ''
   if (!token || token.trim().length === 0) {
     if (typeof console !== 'undefined') {
-      console.warn('PINATA_JWT or NEXT_PUBLIC_PINATA_JWT not found or empty.')
+      console.warn('NEXT_PUBLIC_PINATA_JWT not found or empty. Set it in hackproof-frontend/.env.local and restart dev server.')
     }
   }
   return token
