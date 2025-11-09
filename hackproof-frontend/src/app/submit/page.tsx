@@ -2,12 +2,14 @@
 import { useState } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useProjects } from '@/contexts/ProjectsContext'
+import { useParticipant } from '@/contexts/ParticipantContext'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function SubmitProjectPage() {
     const { connected, publicKey } = useWallet()
-    const { addProject } = useProjects()
+    const { isRegistered } = useParticipant()
+    const { addProject, getUserProject, hasUserSubmittedProject, isProjectNameTaken } = useProjects()
     const router = useRouter()
     const [formData, setFormData] = useState({
         name: '',
@@ -18,6 +20,13 @@ export default function SubmitProjectPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [submitSuccess, setSubmitSuccess] = useState(false)
     const [projectId, setProjectId] = useState<string | null>(null)
+    const [submitError, setSubmitError] = useState<string | null>(null)
+    const [nameError, setNameError] = useState<string | null>(null)
+
+    // Check if user already has a project
+    const existingProject = publicKey ? getUserProject(publicKey.toString()) : undefined
+    const hasExistingProject = publicKey ? hasUserSubmittedProject(publicKey.toString()) : false
+    const isNameTaken = formData.name.trim() ? isProjectNameTaken(formData.name) : false
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target
@@ -25,18 +34,57 @@ export default function SubmitProjectPage() {
             ...prev,
             [name]: value
         }))
+        
+        // Clear name error when user types
+        if (name === 'name') {
+            setNameError(null)
+        }
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        setSubmitError(null)
 
         if (!connected || !publicKey) {
-            alert('Please connect your wallet first')
+            setSubmitError('Please connect your wallet first')
             return
         }
 
-        if (!formData.name || !formData.description) {
-            alert('Please fill in project name and description')
+        if (!isRegistered) {
+            setSubmitError('You must register as a participant before submitting a project. Please register first.')
+            return
+        }
+
+        // CRITICAL: Prevent multiple project submissions
+        if (hasExistingProject) {
+            setSubmitError('You have already submitted a project. Each wallet can only submit one project.')
+            return
+        }
+
+        if (!formData.name.trim()) {
+            setSubmitError('Project name is required')
+            return
+        }
+
+        // CRITICAL: Check if project name is already taken
+        if (isProjectNameTaken(formData.name.trim())) {
+            setSubmitError(`A project with the name "${formData.name.trim()}" already exists. Please choose a different name.`)
+            setNameError(`A project with this name already exists. Please choose a different name.`)
+            return
+        }
+
+        if (!formData.description.trim()) {
+            setSubmitError('Project description is required')
+            return
+        }
+
+        if (formData.name.length > 100) {
+            setSubmitError('Project name must be 100 characters or less')
+            return
+        }
+
+        if (formData.description.length > 1000) {
+            setSubmitError('Project description must be 1000 characters or less')
             return
         }
 
@@ -48,12 +96,17 @@ export default function SubmitProjectPage() {
                 .map(m => m.trim())
                 .filter(m => m.length > 0)
 
+            // Ensure at least one team member (the submitter)
+            if (teamMembersList.length === 0) {
+                teamMembersList.push(publicKey.toString().slice(0, 8) + '...')
+            }
+
             // addProject now uploads to IPFS and returns a Promise
             const id = await addProject({
-                name: formData.name,
-                description: formData.description,
+                name: formData.name.trim(),
+                description: formData.description.trim(),
                 teamMembers: teamMembersList,
-                githubLink: formData.githubLink || undefined,
+                githubLink: formData.githubLink.trim() || undefined,
                 owner: publicKey.toString()
             })
 
@@ -66,7 +119,8 @@ export default function SubmitProjectPage() {
             }, 2000)
         } catch (error) {
             console.error('Error submitting project:', error)
-            alert(error instanceof Error ? error.message : 'Failed to submit project. Please check your PINATA_JWT and try again.')
+            const errorMessage = error instanceof Error ? error.message : 'Failed to submit project. Please check your PINATA_JWT and try again.'
+            setSubmitError(errorMessage)
         } finally {
             setIsSubmitting(false)
         }
@@ -112,6 +166,37 @@ export default function SubmitProjectPage() {
                 </div>
 
                 <div className="bg-background/80 backdrop-blur-sm border border-foreground/10 rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-12 shadow-xl">
+                    {!isRegistered && connected && (
+                        <div className="bg-yellow-600/10 border border-yellow-600/20 rounded-lg p-4 mb-6">
+                            <p className="text-sm text-yellow-600">
+                                ⚠️ You must register as a participant before submitting a project. <Link href="/register" className="underline font-semibold">Register here</Link>
+                            </p>
+                        </div>
+                    )}
+
+                    {hasExistingProject && existingProject && (
+                        <div className="bg-red-600/10 border border-red-600/20 rounded-lg p-6 mb-6">
+                            <p className="text-sm text-red-600 font-semibold mb-2">
+                                🚫 You have already submitted a project!
+                            </p>
+                            <p className="text-sm text-red-600 mb-3">
+                                Each wallet can only submit one project. You cannot submit another project.
+                            </p>
+                            <Link
+                                href={`/project/${existingProject.id}`}
+                                className="inline-block text-sm text-red-600 underline font-semibold hover:text-red-700"
+                            >
+                                View your existing project: {existingProject.cachedMetadata?.name || 'Your Project'} →
+                            </Link>
+                        </div>
+                    )}
+
+                    {submitError && (
+                        <div className="bg-red-600/10 border border-red-600/20 rounded-lg p-4 mb-6">
+                            <p className="text-sm text-red-600">{submitError}</p>
+                        </div>
+                    )}
+
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
                             <label htmlFor="name" className="block text-sm font-medium mb-2">
@@ -124,9 +209,21 @@ export default function SubmitProjectPage() {
                                 value={formData.name}
                                 onChange={handleInputChange}
                                 required
-                                className="w-full px-4 py-3 rounded-lg border border-foreground/20 bg-background focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                className={`w-full px-4 py-3 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                                    nameError || isNameTaken
+                                        ? 'border-red-500 focus:ring-red-500'
+                                        : 'border-foreground/20 focus:ring-blue-500'
+                                }`}
                                 placeholder="Enter your project name"
                             />
+                            {nameError && (
+                                <p className="mt-1 text-sm text-red-600">{nameError}</p>
+                            )}
+                            {isNameTaken && !nameError && (
+                                <p className="mt-1 text-sm text-red-600">
+                                    ⚠️ A project with this name already exists. Please choose a different name.
+                                </p>
+                            )}
                         </div>
 
                         <div>
@@ -178,7 +275,7 @@ export default function SubmitProjectPage() {
                         <div className="pt-4">
                             <button
                                 type="submit"
-                                disabled={isSubmitting || !formData.name || !formData.description}
+                                disabled={isSubmitting || !formData.name || !formData.description || hasExistingProject || isNameTaken}
                                 className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold shadow-xl hover:shadow-2xl hover:from-blue-500 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-xl flex items-center justify-center gap-2 border border-blue-500/50"
                             >
                                 {isSubmitting ? (

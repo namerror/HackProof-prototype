@@ -1,6 +1,7 @@
 'use client'
 import { useParams, useRouter } from 'next/navigation'
 import { useProjects, getProjectDisplayData } from '@/contexts/ProjectsContext'
+import { useParticipant } from '@/contexts/ParticipantContext'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -11,9 +12,11 @@ export default function ProjectPage() {
     const router = useRouter()
     const { projects, voteOnProject } = useProjects()
     const { connected, publicKey } = useWallet()
+    const { isRegistered, participant } = useParticipant()
     const [voteAmount, setVoteAmount] = useState(1)
     const [isVoting, setIsVoting] = useState(false)
     const [votingTokens, setVotingTokens] = useState(100) // Mock: should fetch from wallet
+    const [voteError, setVoteError] = useState<string | null>(null)
 
     const projectId = params.id as string
     const project = projects.find(p => p.id === projectId)
@@ -27,26 +30,61 @@ export default function ProjectPage() {
     }, [project, projects, router])
 
     const handleVote = async () => {
-        if (!connected) {
-            alert('Please connect your wallet to vote')
+        setVoteError(null)
+        
+        // Validation checks
+        if (!connected || !publicKey) {
+            setVoteError('Please connect your wallet to vote')
             return
         }
 
-        if (voteAmount < 1 || voteAmount > votingTokens) {
-            alert(`Please enter a valid amount (1-${votingTokens} tokens)`)
+        if (!isRegistered) {
+            setVoteError('You must register as a participant before voting. Please register first.')
+            return
+        }
+
+        if (!project) {
+            setVoteError('Project not found')
+            return
+        }
+
+        // CRITICAL: Prevent self-voting
+        const voterAddress = publicKey.toString().toLowerCase()
+        const projectOwner = project.owner.toLowerCase()
+        if (voterAddress === projectOwner) {
+            setVoteError('You cannot vote for your own project!')
+            return
+        }
+
+        if (voteAmount < 1) {
+            setVoteError('Vote amount must be at least 1 token')
+            return
+        }
+
+        if (voteAmount > votingTokens) {
+            setVoteError(`You only have ${votingTokens} voting tokens available`)
+            return
+        }
+
+        if (votingTokens === 0) {
+            setVoteError('You have no voting tokens remaining')
             return
         }
 
         setIsVoting(true)
 
         try {
-            voteOnProject(projectId, voteAmount)
+            voteOnProject(projectId, voteAmount, voterAddress)
             setVotingTokens(prev => prev - voteAmount)
             setVoteAmount(1)
-            alert(`Successfully voted ${voteAmount} token(s)!`)
-        } catch (error) {
+            setVoteError(null)
+            // Show success message
+            alert(`Successfully voted ${voteAmount} token(s) for "${displayData?.name}"!`)
+        } catch (error: any) {
             console.error('Error voting:', error)
-            alert('Failed to vote. Please try again.')
+            const errorMessage = error?.message || 'Failed to vote. Please try again.'
+            setVoteError(errorMessage)
+            // Don't show alert if we're showing error in UI
         } finally {
             setIsVoting(false)
         }
@@ -132,6 +170,28 @@ export default function ProjectPage() {
                                 <p className="text-foreground/70">Use your voting tokens to support this project</p>
                             </div>
 
+                            {!isRegistered && (
+                                <div className="bg-yellow-600/10 border border-yellow-600/20 rounded-lg p-4">
+                                    <p className="text-sm text-yellow-600">
+                                        ⚠️ You must register as a participant before voting. <Link href="/register" className="underline font-semibold">Register here</Link>
+                                    </p>
+                                </div>
+                            )}
+
+                            {project && publicKey && project.owner.toLowerCase() === publicKey.toString().toLowerCase() && (
+                                <div className="bg-red-600/10 border border-red-600/20 rounded-lg p-4">
+                                    <p className="text-sm text-red-600">
+                                        🚫 You cannot vote for your own project!
+                                    </p>
+                                </div>
+                            )}
+
+                            {voteError && (
+                                <div className="bg-red-600/10 border border-red-600/20 rounded-lg p-4">
+                                    <p className="text-sm text-red-600">{voteError}</p>
+                                </div>
+                            )}
+
                             <div className="bg-blue-600/10 border border-blue-600/20 rounded-lg p-4 mb-4">
                                 <div className="text-sm text-foreground/70 mb-1">Your Voting Tokens</div>
                                 <div className="text-2xl font-bold text-blue-600">{votingTokens} $HACK</div>
@@ -151,14 +211,21 @@ export default function ProjectPage() {
                                         onChange={(e) => {
                                             const val = parseInt(e.target.value) || 1
                                             setVoteAmount(Math.min(Math.max(1, val), votingTokens))
+                                            setVoteError(null) // Clear error when user changes input
                                         }}
                                         className="w-full px-4 py-3 rounded-lg border border-foreground/20 bg-background focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        disabled={isVoting || votingTokens === 0}
+                                        disabled={isVoting || votingTokens === 0 || !isRegistered || !!(project && publicKey && project.owner.toLowerCase() === publicKey.toString().toLowerCase())}
                                     />
                                 </div>
                                 <button
                                     onClick={handleVote}
-                                    disabled={isVoting || votingTokens === 0 || voteAmount > votingTokens}
+                                    disabled={
+                                        isVoting || 
+                                        votingTokens === 0 || 
+                                        voteAmount > votingTokens || 
+                                        !isRegistered ||
+                                        !!(project && publicKey && project.owner.toLowerCase() === publicKey.toString().toLowerCase())
+                                    }
                                     className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-500 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl border border-blue-500/50 hover:scale-105 disabled:hover:scale-100"
                                 >
                                     {isVoting ? 'Voting...' : 'Vote'}

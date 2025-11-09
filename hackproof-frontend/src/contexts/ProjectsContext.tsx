@@ -27,8 +27,11 @@ interface ProjectsContextType {
         githubLink?: string
         owner: string
     }) => Promise<string>
-    voteOnProject: (projectId: string, votes: number) => void
+    voteOnProject: (projectId: string, votes: number, voterWalletAddress?: string) => void
     loadProjectMetadata: (projectId: string) => Promise<void>
+    getUserProject: (walletAddress: string) => Project | undefined
+    hasUserSubmittedProject: (walletAddress: string) => boolean
+    isProjectNameTaken: (projectName: string) => boolean
 }
 
 const ProjectsContext = createContext<ProjectsContextType | undefined>(undefined)
@@ -108,6 +111,21 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         }
     }, [projects])
 
+    const getUserProject = (walletAddress: string): Project | undefined => {
+        return projects.find(p => p.owner.toLowerCase() === walletAddress.toLowerCase())
+    }
+
+    const hasUserSubmittedProject = (walletAddress: string): boolean => {
+        return getUserProject(walletAddress) !== undefined
+    }
+
+    const isProjectNameTaken = (projectName: string): boolean => {
+        const trimmedName = projectName.trim().toLowerCase()
+        return projects.some(p => 
+            p.cachedMetadata?.name?.toLowerCase() === trimmedName
+        )
+    }
+
     const addProject = async (projectData: {
         name: string
         description: string
@@ -115,6 +133,21 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         githubLink?: string
         owner: string
     }): Promise<string> => {
+        // CRITICAL: Check if user already has a project
+        const existingProject = getUserProject(projectData.owner)
+        if (existingProject) {
+            throw new Error('You have already submitted a project. Each wallet can only submit one project.')
+        }
+
+        // CRITICAL: Check if project name is already taken (case-insensitive)
+        const trimmedName = projectData.name.trim()
+        const duplicateProject = projects.find(p => 
+            p.cachedMetadata?.name?.toLowerCase() === trimmedName.toLowerCase()
+        )
+        if (duplicateProject) {
+            throw new Error(`A project with the name "${trimmedName}" already exists. Please choose a different name.`)
+        }
+
         try {
             const client = getClient()
             // Step 1: Upload project placeholder image to IPFS
@@ -201,18 +234,28 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         }
     }
 
-    const voteOnProject = (projectId: string, votes: number) => {
-        setProjects(prev =>
-            prev.map(project =>
-                project.id === projectId
-                    ? { ...project, votes: project.votes + votes }
-                    : project
+    const voteOnProject = (projectId: string, votes: number, voterWalletAddress?: string) => {
+        setProjects(prev => {
+            const project = prev.find(p => p.id === projectId)
+            if (!project) {
+                throw new Error('Project not found')
+            }
+            
+            // CRITICAL: Prevent self-voting
+            if (voterWalletAddress && project.owner.toLowerCase() === voterWalletAddress.toLowerCase()) {
+                throw new Error('Cannot vote for your own project!')
+            }
+            
+            return prev.map(p =>
+                p.id === projectId
+                    ? { ...p, votes: p.votes + votes }
+                    : p
             )
-        )
+        })
     }
 
     return (
-        <ProjectsContext.Provider value={{ projects, addProject, voteOnProject, loadProjectMetadata }}>
+        <ProjectsContext.Provider value={{ projects, addProject, voteOnProject, loadProjectMetadata, getUserProject, hasUserSubmittedProject, isProjectNameTaken }}>
             {children}
         </ProjectsContext.Provider>
     )

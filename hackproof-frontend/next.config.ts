@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
   // Turbopack configuration for Next.js 16
   turbopack: {
     resolveAlias: {
-      '@shared': path.resolve(__dirname, '../shared/src/index.ts'),
+      '@shared': path.resolve(__dirname, '../shared/src'),
     },
   },
 };

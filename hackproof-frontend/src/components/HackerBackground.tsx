@@ -34,6 +34,7 @@ export default function HackerBackground() {
         }
 
         function animate() {
+            if (!ctx || !canvas) return
             ctx.clearRect(0, 0, canvas.width, canvas.height)
             ctx.strokeStyle = 'rgba(34, 197, 94, 0.4)'
             ctx.lineWidth = 1.5
