@@ -47,6 +47,7 @@ export default function RegisterPage() {
         project: '',
         description: ''
     })
+    const [error, setError] = useState<string | null>(null)
     const [isMinting, setIsMinting] = useState(false)
     const [mintSuccess, setMintSuccess] = useState(false)
     const [metadataCid, setMetadataCid] = useState<string | null>(null)
@@ -61,9 +62,18 @@ export default function RegisterPage() {
         }))
     }
 
+    const createMetadataJson = () => {
+        return JSON.stringify({
+            name: formData.name,
+            project: formData.project,
+            description: formData.description,
+            created_at: new Date().toISOString()
+        })
+    }
+
     const handleMintNFT = async () => {
-        if (!connected || !publicKey) {
-            alert('Please connect your wallet first')
+        if (!connected || !publicKey || !wallet) {
+            setError('Please connect your wallet first')
             return
         }
 
@@ -73,11 +83,12 @@ export default function RegisterPage() {
         }
 
         if (!formData.name || !formData.project || !formData.description) {
-            alert('Please fill in all fields')
+            setError('Please fill in all fields')
             return
         }
 
         setIsMinting(true)
+        setError(null)
 
         try {
             const client = new IPFSClient()
@@ -375,7 +386,7 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="bg-background/80 backdrop-blur-sm border border-foreground/10 rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-12 shadow-xl">
-                    <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleMintNFT() }}>
+                    <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
                         <div>
                             <label htmlFor="name" className="block text-sm font-medium mb-2">
                                 Name *
@@ -424,6 +435,12 @@ export default function RegisterPage() {
                             />
                         </div>
 
+                        {error && (
+                            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600">
+                                <p>{error}</p>
+                            </div>
+                        )}
+                        
                         <div className="pt-4">
                             <button
                                 type="submit"
