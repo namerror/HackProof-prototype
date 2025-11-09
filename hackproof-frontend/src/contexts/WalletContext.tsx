@@ -8,7 +8,7 @@ import {
   TorusWalletAdapter,
   LedgerWalletAdapter
 } from '@solana/wallet-adapter-wallets';
-import { clusterApiUrl } from '@solana/web3.js';
+import { clusterApiUrl, PublicKey } from '@solana/web3.js';
 import { useMemo, useEffect, useState } from 'react';
 
 // Type declaration for window.solana
@@ -23,6 +23,8 @@ declare global {
     };
   }
 }
+
+export const HACKPROOF_PROGRAM_ID = new PublicKey("41MbmvmGCzNeJbJyMQry5uD4eVagxKccMgNA533rKWqs")
 
 export function WalletContextProvider({ children }: { children: React.ReactNode }) {
   const network = WalletAdapterNetwork.Devnet;
