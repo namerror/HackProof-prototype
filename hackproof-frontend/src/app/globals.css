@@ -203,8 +203,8 @@ button:hover::before,
   left: 100%;
 }
 
-/* Wallet adapter button styles */
-.wallet-adapter-button {
+/* Wallet adapter button styles - for the trigger button */
+.wallet-adapter-button:not(.wallet-adapter-modal-list-item .wallet-adapter-button) {
   background-color: transparent !important;
   border: none !important;
   padding: 0 !important;
@@ -357,4 +357,174 @@ a {
 .btn-hacker-secondary:hover {
   background: rgba(0, 255, 159, 0.2);
   box-shadow: 0 0 20px rgba(0, 255, 159, 0.3);
+}
+
+/* Wallet Adapter Modal Styles - Green Hacker Theme */
+.wallet-adapter-modal-overlay {
+  background: rgba(15, 15, 15, 0.9) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  z-index: 9999 !important;
+}
+
+.wallet-adapter-modal-wrapper {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace !important;
+}
+
+.wallet-adapter-modal {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(0, 255, 159, 0.3) !important;
+  border-radius: 1rem !important;
+  box-shadow: 
+    0 0 40px rgba(0, 255, 159, 0.3),
+    0 8px 32px rgba(0, 0, 0, 0.5) !important;
+  color: #00ff9f !important;
+  max-width: 400px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.wallet-adapter-modal-title {
+  color: #00ff9f !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-weight: 700 !important;
+  font-size: 1.5rem !important;
+  padding: 1.5rem 1.5rem 1rem 1.5rem !important;
+  margin: 0 !important;
+  border-bottom: 1px solid rgba(0, 255, 159, 0.2) !important;
+  text-shadow: 0 0 10px rgba(0, 255, 159, 0.5) !important;
+}
+
+.wallet-adapter-modal-button-close {
+  background: transparent !important;
+  border: none !important;
+  color: #00ff9f !important;
+  cursor: pointer !important;
+  padding: 0.75rem !important;
+  position: absolute !important;
+  right: 0.5rem !important;
+  top: 0.5rem !important;
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 0.5rem !important;
+  transition: all 0.2s ease !important;
+  z-index: 10 !important;
+}
+
+.wallet-adapter-modal-button-close:hover {
+  background: rgba(0, 255, 159, 0.1) !important;
+  color: #00cc7f !important;
+  box-shadow: 0 0 15px rgba(0, 255, 159, 0.3) !important;
+  transform: scale(1.1) !important;
+}
+
+.wallet-adapter-modal-button-close:active {
+  transform: scale(0.95) !important;
+}
+
+.wallet-adapter-modal-button-close svg {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  stroke-width: 2.5 !important;
+}
+
+.wallet-adapter-modal-list {
+  margin: 0 !important;
+  padding: 1rem !important;
+  list-style: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.5rem !important;
+}
+
+.wallet-adapter-modal-list-item {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.wallet-adapter-modal-list-more {
+  margin: 0 !important;
+  padding: 0 !important;
+  border-top: 1px solid rgba(0, 255, 159, 0.2) !important;
+  margin-top: 0.5rem !important;
+  padding-top: 0.5rem !important;
+}
+
+.wallet-adapter-modal-list-more .wallet-adapter-modal-list {
+  padding-top: 0.5rem !important;
+}
+
+/* Wallet buttons inside the modal */
+.wallet-adapter-modal-list-item .wallet-adapter-button {
+  background: rgba(0, 255, 159, 0.1) !important;
+  border: 1px solid rgba(0, 255, 159, 0.3) !important;
+  border-radius: 0.75rem !important;
+  color: #00ff9f !important;
+  cursor: pointer !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  padding: 1rem 1.25rem !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 1rem !important;
+  text-align: left !important;
+  letter-spacing: 0.025em !important;
+  position: relative !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+}
+
+.wallet-adapter-modal-list-item .wallet-adapter-button:hover {
+  background: rgba(0, 255, 159, 0.2) !important;
+  border-color: rgba(0, 255, 159, 0.5) !important;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 159, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  transform: translateY(-2px) !important;
+  color: #00cc7f !important;
+}
+
+.wallet-adapter-modal-list-item .wallet-adapter-button:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 159, 0.2) !important;
+}
+
+.wallet-adapter-button-start-icon,
+.wallet-adapter-button-end-icon {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  flex-shrink: 0 !important;
+}
+
+.wallet-adapter-button-start-icon img,
+.wallet-adapter-button-end-icon img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+.wallet-adapter-button span {
+  flex: 1 !important;
+  text-align: left !important;
+}
+
+/* Wallet adapter button when connected */
+.wallet-adapter-button[aria-expanded="true"] {
+  background: rgba(0, 255, 159, 0.15) !important;
+}
+
+/* Fix for wallet adapter modal container */
+.wallet-adapter-modal-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 100vh !important;
+  padding: 1rem !important;
 }
