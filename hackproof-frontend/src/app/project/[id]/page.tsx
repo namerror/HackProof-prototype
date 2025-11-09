@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { QRCodeSVG } from 'qrcode.react'
 import { AlertTriangle, Link2, XCircle } from 'lucide-react'
+import { getVotingTokenBalance } from '@/services/solana-integration'
 
 export default function ProjectPage() {
     const params = useParams()
@@ -18,12 +19,36 @@ export default function ProjectPage() {
     const { isRegistered, participant } = useParticipant()
     const [voteAmount, setVoteAmount] = useState(1)
     const [isVoting, setIsVoting] = useState(false)
-    const [votingTokens, setVotingTokens] = useState(100) // Mock: should fetch from wallet
+    const [votingTokens, setVotingTokens] = useState<number>(0)
     const [voteError, setVoteError] = useState<string | null>(null)
 
     const projectId = params.id as string
     const project = projects.find(p => p.id === projectId)
     const displayData = project ? getProjectDisplayData(project) : null
+
+    // Fetch actual voting token balance
+    useEffect(() => {
+        if (!connected || !publicKey) {
+            setVotingTokens(0)
+            return
+        }
+
+        let cancelled = false
+        async function fetchBalance() {
+            if (publicKey) {
+                try {
+                    const balance = await getVotingTokenBalance(connection, publicKey)
+                    if (!cancelled) setVotingTokens(balance)
+                } catch (error) {
+                    console.error('Error fetching voting token balance:', error)
+                    if (!cancelled) setVotingTokens(0)
+                }
+            }
+        }
+        fetchBalance()
+        
+        return () => { cancelled = true }
+    }, [connected, publicKey, connection])
 
     useEffect(() => {
         // Check if project exists
@@ -212,7 +237,7 @@ export default function ProjectPage() {
 
                             <div className="bg-[#00ff9f]/10 border border-[#00ff9f]/30 rounded p-4 mb-4">
                                 <div className="text-sm text-[#00ff9f]/80 mb-1 font-mono">Your Voting Tokens</div>
-                                <div className="text-2xl font-bold text-[#00ff9f] font-mono">{votingTokens} $HACK</div>
+                                <div className="text-2xl font-bold text-[#00ff9f] font-mono">{votingTokens} $HCKPRF</div>
                             </div>
 
                             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
