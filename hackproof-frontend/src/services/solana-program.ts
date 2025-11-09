@@ -1,7 +1,13 @@
-import { Connection, PublicKey, SystemProgram, Transaction, TransactionInstruction } from '@solana/web3.js'
+import { Connection, PublicKey, SystemProgram, Transaction, TransactionInstruction, Keypair, SYSVAR_INSTRUCTIONS_PUBKEY, SYSVAR_RENT_PUBKEY } from '@solana/web3.js'
+import { Program, AnchorProvider } from '@project-serum/anchor'
 import { HACKPROOF_PROGRAM_ID } from '@/contexts/WalletContext'
 import { WalletContextState } from '@solana/wallet-adapter-react'
 import { sha256 } from '@noble/hashes/sha256'
+import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createAssociatedTokenAccountInstruction } from '@solana/spl-token'
+import { HACKPROOF_IDL } from '@/idl/hackproof'
+
+// Metaplex Token Metadata Program (mainnet / devnet universal ID)
+export const METAPLEX_TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s')
 
 /**
  * Get the participant PDA (Program Derived Address)
@@ -47,62 +53,93 @@ export async function registerParticipantOnChain(
   }
 
   try {
-    // Get participant PDA
-    const [participantPDA, bump] = getParticipantPDA(wallet.publicKey)
+    // Anchor program/provider
+    const provider = new AnchorProvider(connection, wallet as any, {})
+    const program = new Program(HACKPROOF_IDL, HACKPROOF_PROGRAM_ID, provider)
 
-    // Create a dummy metadata account pubkey (the program expects it but doesn't use it currently)
-    // The program has it as UncheckedAccount, so we can use any valid pubkey
-    const metadataAccount = PublicKey.findProgramAddressSync(
-      [Buffer.from('metadata'), participantPDA.toBuffer()],
-      HACKPROOF_PROGRAM_ID
-    )[0]
+    // Derive required PDAs
+    const [participantPDA] = getParticipantPDA(wallet.publicKey)
+    const [hackathonPda] = PublicKey.findProgramAddressSync([
+      Buffer.from('hackathon')
+    ], HACKPROOF_PROGRAM_ID)
+    const [votingTokenMintPda] = PublicKey.findProgramAddressSync([
+      Buffer.from('voting_token_mint')
+    ], HACKPROOF_PROGRAM_ID)
 
-    // Build instruction data
-    // Anchor instruction format: [discriminator: 8 bytes] [name_len: u32] [name: bytes] [uri_len: u32] [uri: bytes]
-    const methodDiscriminator = getMethodDiscriminator('register_participant')
-    const nameBytes = Buffer.from(name, 'utf-8')
-    const uriBytes = Buffer.from(metadataUri, 'utf-8')
-    
-    const data = Buffer.alloc(8 + 4 + nameBytes.length + 4 + uriBytes.length)
-    methodDiscriminator.copy(data, 0)
-    data.writeUInt32LE(nameBytes.length, 8)
-    nameBytes.copy(data, 12)
-    data.writeUInt32LE(uriBytes.length, 12 + nameBytes.length)
-    uriBytes.copy(data, 12 + nameBytes.length + 4)
+    // Generate mint for participant NFT
+  const nftMintKeypair = Keypair.generate()
 
-    // Create instruction
-    const instruction = new TransactionInstruction({
-      keys: [
-        { pubkey: participantPDA, isSigner: false, isWritable: true },
-        { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
-        { pubkey: metadataAccount, isSigner: false, isWritable: true },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      ],
-      programId: HACKPROOF_PROGRAM_ID,
-      data,
-    })
+    // Metaplex metadata + master edition PDAs (must be derived with Metaplex program ID)
+    const metadataPda = PublicKey.findProgramAddressSync([
+      Buffer.from('metadata'),
+      METAPLEX_TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+      nftMintKeypair.publicKey.toBuffer()
+    ], METAPLEX_TOKEN_METADATA_PROGRAM_ID)[0]
 
-    // Build transaction
-    const transaction = new Transaction()
-    transaction.add(instruction)
-    transaction.feePayer = wallet.publicKey
-    
-    const { blockhash } = await connection.getLatestBlockhash('confirmed')
-    transaction.recentBlockhash = blockhash
+    const masterEditionPda = PublicKey.findProgramAddressSync([
+      Buffer.from('metadata'),
+      METAPLEX_TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+      nftMintKeypair.publicKey.toBuffer(),
+      Buffer.from('edition')
+    ], METAPLEX_TOKEN_METADATA_PROGRAM_ID)[0]
 
-    // Sign and send transaction
-    const signed = await wallet.signTransaction(transaction)
-    const signature = await connection.sendRawTransaction(signed.serialize(), {
-      skipPreflight: false,
-      maxRetries: 3,
-    })
+    // Associated token accounts
+    const nftTokenAccount = getAssociatedTokenAddressSync(
+      nftMintKeypair.publicKey,
+      wallet.publicKey,
+      false,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    )
 
-    // Wait for confirmation
-    await connection.confirmTransaction(signature, 'confirmed')
+    const votingTokenAccount = getAssociatedTokenAddressSync(
+      votingTokenMintPda,
+      wallet.publicKey,
+      false,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    )
+
+    // Pre-instruction: ensure NFT ATA exists (the on-chain program does not create it)
+    const preInstructions: TransactionInstruction[] = []
+    preInstructions.push(
+      createAssociatedTokenAccountInstruction(
+        wallet.publicKey, // payer
+        nftTokenAccount,
+        wallet.publicKey, // owner (authority)
+        nftMintKeypair.publicKey,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      )
+    )
+
+    // Execute Anchor method with signers
+    const signature = await program.methods
+      .registerParticipant(name, metadataUri)
+      .accounts({
+        participant: participantPDA,
+        hackathon: hackathonPda,
+        metadata: metadataPda,
+        masterEdition: masterEditionPda,
+        nftMint: nftMintKeypair.publicKey,
+        nftTokenAccount,
+        votingTokenMint: votingTokenMintPda,
+        votingTokenAccount,
+        authority: wallet.publicKey,
+        rent: SYSVAR_RENT_PUBKEY,
+        systemProgram: SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        tokenMetadataProgram: METAPLEX_TOKEN_METADATA_PROGRAM_ID,
+        sysvarInstructions: SYSVAR_INSTRUCTIONS_PUBKEY
+      })
+      .preInstructions(preInstructions)
+      .signers([nftMintKeypair])
+      .rpc()
 
     return signature
   } catch (error) {
-    console.error('Error registering participant on Solana:', error)
+    console.error('Error registering participant on Solana via Anchor:', error)
     throw error
   }
 }

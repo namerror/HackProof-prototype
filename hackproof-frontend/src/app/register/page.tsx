@@ -6,11 +6,12 @@ import { IPFSClient, createParticipantMetadata } from '@shared'
 import { useParticipant } from '@/contexts/ParticipantContext'
 import { Program, AnchorProvider } from '@project-serum/anchor'
 import { PublicKey, SystemProgram, Keypair, SYSVAR_INSTRUCTIONS_PUBKEY, SYSVAR_RENT_PUBKEY } from '@solana/web3.js'
-import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from '@solana/spl-token'
+import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createAssociatedTokenAccountInstruction } from '@solana/spl-token'
 import { HACKPROOF_IDL } from '@/idl/hackproof'
 import { HACKPROOF_PROGRAM_ID } from '@/contexts/WalletContext'
 import { CheckCircle2, Sparkles, Loader2 } from 'lucide-react'
 import DevnetFaucet from '@/components/DevnetFaucet'
+import { isHackathonInitialized } from '@/services/solana-integration'
 
 // Metaplex Token Metadata Program ID
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s')
@@ -160,6 +161,12 @@ export default function RegisterPage() {
                     throw new Error('Wallet not connected')
                 }
 
+                // Ensure hackathon is initialized on-chain before proceeding
+                const initialized = await isHackathonInitialized(connection)
+                if (!initialized) {
+                    throw new Error('Hackathon is not initialized on-chain. Please ask the admin to initialize the hackathon first.')
+                }
+
                 // Create Anchor provider and program
                 const provider = new AnchorProvider(connection, wallet, {})
                 const program = new Program(HACKPROOF_IDL, HACKPROOF_PROGRAM_ID, provider)
@@ -206,28 +213,40 @@ export default function RegisterPage() {
                 )
 
 
-                // Call the Solana program using Anchor
+                // Pre-instruction: create ATA for the NFT so mint_to succeeds inside program
+                const preInstructions = [
+                    createAssociatedTokenAccountInstruction(
+                        publicKey, // payer
+                        nftTokenAccount,
+                        publicKey, // owner
+                        nftMint.publicKey,
+                        TOKEN_PROGRAM_ID,
+                        ASSOCIATED_TOKEN_PROGRAM_ID
+                    )
+                ]
+
                 signature = await program.methods
-                    .registerParticipant(formData.name, metadataUri)
-                    .accounts({
-                        participant: participantPda,
-                        hackathon: hackathonPda,
-                        metadata: metadataAddress,
-                        masterEdition: masterEditionAddress,
-                        nftMint: nftMint.publicKey,
-                        nftTokenAccount: nftTokenAccount,
-                        votingTokenMint: votingTokenMintPda,
-                        votingTokenAccount: votingTokenAccount,
-                        authority: publicKey,
-                        rent: SYSVAR_RENT_PUBKEY,
-                        systemProgram: SystemProgram.programId,
-                        tokenProgram: TOKEN_PROGRAM_ID,
-                        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-                        sysvarInstructions: SYSVAR_INSTRUCTIONS_PUBKEY,
-                    })
-                    .signers([nftMint])
-                    .rpc()
+                  .registerParticipant(formData.name, metadataUri)
+                  .accounts({
+                      participant: participantPda,
+                      hackathon: hackathonPda,
+                      metadata: metadataAddress,
+                      masterEdition: masterEditionAddress,
+                      nftMint: nftMint.publicKey,
+                      nftTokenAccount: nftTokenAccount,
+                      votingTokenMint: votingTokenMintPda,
+                      votingTokenAccount: votingTokenAccount,
+                      authority: publicKey,
+                      rent: SYSVAR_RENT_PUBKEY,
+                      systemProgram: SystemProgram.programId,
+                      tokenProgram: TOKEN_PROGRAM_ID,
+                      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                      tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+                      sysvarInstructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+                  })
+                  .preInstructions(preInstructions)
+                  .signers([nftMint])
+                  .rpc()
 
                 setTxSignature(signature)
                 console.log('Solana transaction signature:', signature)
