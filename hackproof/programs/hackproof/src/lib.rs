@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{mint_to, transfer, Mint, MintTo, Token, TokenAccount, Transfer},
+    token::{spl_token, mint_to, transfer, Mint, MintTo, Token, TokenAccount, Transfer},
 };
 use mpl_token_metadata::{
     instructions::{CreateV1CpiBuilder},
@@ -410,7 +410,11 @@ pub struct RegisterParticipant<'info> {
     
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
+
+    #[account(address = spl_token::ID)]
     pub token_program: Program<'info, Token>,
+
+    #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
     
     /// CHECK: Metaplex Token Metadata Program
