@@ -20,16 +20,16 @@ export default function DevnetFaucet() {
     setMessage(null)
 
     try {
-      // Request 0.5 SOL from the devnet faucet
+      // Request 0.2 SOL from the devnet faucet
       const signature = await connection.requestAirdrop(
         publicKey,
-        0.5 * LAMPORTS_PER_SOL
+        0.2 * LAMPORTS_PER_SOL
       )
 
       // Wait for confirmation
       await connection.confirmTransaction(signature, 'confirmed')
       
-      setMessage('Success! 0.5 SOL airdropped to your wallet.')
+      setMessage('Success! 0.2 SOL airdropped to your wallet.')
       
       // Clear message after 5 seconds
       setTimeout(() => setMessage(null), 5000)
@@ -58,7 +58,7 @@ export default function DevnetFaucet() {
               Need Devnet SOL?
             </div>
             <div className="text-xs text-[#00ff9f]/70 font-mono">
-              Get 2 SOL for free to pay transaction fees
+              Get 0.2 SOL for free to pay transaction fees
             </div>
           </div>
         </div>
