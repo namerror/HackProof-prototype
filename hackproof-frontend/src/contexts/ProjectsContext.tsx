@@ -1,13 +1,18 @@
 'use client'
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { IPFSClient, createProjectMetadata, ProjectMetadata } from '@shared'
+import { PublicKey } from '@solana/web3.js'
+import { createProjectOnChain, voteOnProjectOnChain } from '@/services/solana-integration'
+import { HACKPROOF_PROGRAM_ID } from '@/contexts/WalletContext'
 
 export interface Project {
     id: string
     metadataCid: string // IPFS CID for project metadata
-    votes: number // Dynamic data stored locally (will move to Solana later)
+    votes: number // Dynamic data stored locally (synced from Solana)
     owner: string
     createdAt: number
+    projectPda?: string // Solana Program Derived Address for the project
+    solanaTxSignature?: string // Transaction signature from Solana
     // Cached metadata (loaded from IPFS)
     cachedMetadata?: {
         name: string
@@ -26,8 +31,16 @@ interface ProjectsContextType {
         teamMembers: string[]
         githubLink?: string
         owner: string
+    }, solanaIntegration?: {
+        connection: any
+        wallet: any
+        publicKey: any
     }) => Promise<string>
-    voteOnProject: (projectId: string, votes: number, voterWalletAddress?: string) => void
+    voteOnProject: (projectId: string, votes: number, voterWalletAddress?: string, solanaIntegration?: {
+        connection: any
+        wallet: any
+        publicKey: any
+    }) => Promise<void>
     loadProjectMetadata: (projectId: string) => Promise<void>
     getUserProject: (walletAddress: string) => Project | undefined
     hasUserSubmittedProject: (walletAddress: string) => boolean
@@ -126,13 +139,20 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         )
     }
 
-    const addProject = async (projectData: {
-        name: string
-        description: string
-        teamMembers: string[]
-        githubLink?: string
-        owner: string
-    }): Promise<string> => {
+    const addProject = async (
+        projectData: {
+            name: string
+            description: string
+            teamMembers: string[]
+            githubLink?: string
+            owner: string
+        },
+        solanaIntegration?: {
+            connection: any
+            wallet: any
+            publicKey: any
+        }
+    ): Promise<string> => {
         // CRITICAL: Check if user already has a project
         const existingProject = getUserProject(projectData.owner)
         if (existingProject) {
@@ -201,13 +221,46 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
             // Step 3: Upload metadata to IPFS
             const metadataCid = await client.uploadMetadata(metadata)
 
-            // Step 4: Create project with IPFS CID
+            // Step 4: Create project on Solana blockchain (if integration provided)
+            let projectPda: string | undefined
+            let solanaTxSignature: string | undefined
+            
+            if (solanaIntegration?.connection && solanaIntegration?.wallet && solanaIntegration?.publicKey) {
+                try {
+                    const publicKey = new PublicKey(solanaIntegration.publicKey)
+                    const [projectPdaPubkey] = PublicKey.findProgramAddressSync(
+                        [Buffer.from("project"), publicKey.toBuffer(), Buffer.from(projectData.name)],
+                        HACKPROOF_PROGRAM_ID
+                    )
+                    
+                    const txSignature = await createProjectOnChain(
+                        solanaIntegration.connection,
+                        solanaIntegration.wallet,
+                        projectData.name,
+                        projectData.description,
+                        projectData.githubLink || '',
+                        projectData.teamMembers.length || 1,
+                        publicKey
+                    )
+                    
+                    projectPda = projectPdaPubkey.toString()
+                    solanaTxSignature = txSignature
+                } catch (solanaError: any) {
+                    console.error('Solana project creation failed:', solanaError)
+                    // Continue with IPFS-only project creation if Solana fails
+                    // This allows the app to work even if Solana is not initialized
+                }
+            }
+
+            // Step 5: Create project with IPFS CID and Solana data
             const newProject: Project = {
                 id: `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 metadataCid,
                 votes: 0,
                 owner: projectData.owner,
                 createdAt: Date.now(),
+                projectPda,
+                solanaTxSignature,
                 cachedMetadata: {
                     name: projectData.name,
                     description: projectData.description,
@@ -234,24 +287,58 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         }
     }
 
-    const voteOnProject = (projectId: string, votes: number, voterWalletAddress?: string) => {
-        setProjects(prev => {
-            const project = prev.find(p => p.id === projectId)
-            if (!project) {
-                throw new Error('Project not found')
+    const voteOnProject = async (
+        projectId: string,
+        votes: number,
+        voterWalletAddress?: string,
+        solanaIntegration?: {
+            connection: any
+            wallet: any
+            publicKey: any
+        }
+    ): Promise<void> => {
+        const project = projects.find(p => p.id === projectId)
+        if (!project) {
+            throw new Error('Project not found')
+        }
+        
+        // CRITICAL: Prevent self-voting
+        if (voterWalletAddress && project.owner.toLowerCase() === voterWalletAddress.toLowerCase()) {
+            throw new Error('Cannot vote for your own project!')
+        }
+
+        // If Solana integration is provided and project has a PDA, vote on-chain
+        if (solanaIntegration?.connection && solanaIntegration?.wallet && solanaIntegration?.publicKey && project.projectPda) {
+            try {
+                const projectPdaPubkey = new PublicKey(project.projectPda)
+                await voteOnProjectOnChain(
+                    solanaIntegration.connection,
+                    solanaIntegration.wallet,
+                    projectPdaPubkey,
+                    votes
+                )
+                // Update local state after successful on-chain vote
+                setProjects(prev =>
+                    prev.map(p =>
+                        p.id === projectId
+                            ? { ...p, votes: p.votes + votes }
+                            : p
+                    )
+                )
+            } catch (solanaError: any) {
+                console.error('Solana voting failed:', solanaError)
+                throw new Error(`Voting failed: ${solanaError?.message || 'Unknown error'}`)
             }
-            
-            // CRITICAL: Prevent self-voting
-            if (voterWalletAddress && project.owner.toLowerCase() === voterWalletAddress.toLowerCase()) {
-                throw new Error('Cannot vote for your own project!')
-            }
-            
-            return prev.map(p =>
-                p.id === projectId
-                    ? { ...p, votes: p.votes + votes }
-                    : p
+        } else {
+            // Fallback to local-only voting (for testing or if Solana not initialized)
+            setProjects(prev =>
+                prev.map(p =>
+                    p.id === projectId
+                        ? { ...p, votes: p.votes + votes }
+                        : p
+                )
             )
-        })
+        }
     }
 
     return (

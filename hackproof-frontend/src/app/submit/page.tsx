@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { useWallet } from '@solana/wallet-adapter-react'
+import { useWallet, useConnection, useAnchorWallet } from '@solana/wallet-adapter-react'
 import { useProjects } from '@/contexts/ProjectsContext'
 import { useParticipant } from '@/contexts/ParticipantContext'
 import { useRouter } from 'next/navigation'
@@ -8,6 +8,8 @@ import Link from 'next/link'
 
 export default function SubmitProjectPage() {
     const { connected, publicKey } = useWallet()
+    const { connection } = useConnection()
+    const wallet = useAnchorWallet()
     const { isRegistered } = useParticipant()
     const { addProject, getUserProject, hasUserSubmittedProject, isProjectNameTaken } = useProjects()
     const router = useRouter()
@@ -101,13 +103,17 @@ export default function SubmitProjectPage() {
                 teamMembersList.push(publicKey.toString().slice(0, 8) + '...')
             }
 
-            // addProject now uploads to IPFS and returns a Promise
+            // addProject now uploads to IPFS and creates on Solana
             const id = await addProject({
                 name: formData.name.trim(),
                 description: formData.description.trim(),
                 teamMembers: teamMembersList,
                 githubLink: formData.githubLink.trim() || undefined,
                 owner: publicKey.toString()
+            }, {
+                connection,
+                wallet,
+                publicKey: publicKey
             })
 
             setProjectId(id)

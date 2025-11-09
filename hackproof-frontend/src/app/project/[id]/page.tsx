@@ -2,7 +2,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import { useProjects, getProjectDisplayData } from '@/contexts/ProjectsContext'
 import { useParticipant } from '@/contexts/ParticipantContext'
-import { useWallet } from '@solana/wallet-adapter-react'
+import { useWallet, useConnection, useAnchorWallet } from '@solana/wallet-adapter-react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { QRCodeSVG } from 'qrcode.react'
@@ -12,6 +12,8 @@ export default function ProjectPage() {
     const router = useRouter()
     const { projects, voteOnProject } = useProjects()
     const { connected, publicKey } = useWallet()
+    const { connection } = useConnection()
+    const wallet = useAnchorWallet()
     const { isRegistered, participant } = useParticipant()
     const [voteAmount, setVoteAmount] = useState(1)
     const [isVoting, setIsVoting] = useState(false)
@@ -74,7 +76,16 @@ export default function ProjectPage() {
         setIsVoting(true)
 
         try {
-            voteOnProject(projectId, voteAmount, voterAddress)
+            await voteOnProject(
+                projectId,
+                voteAmount,
+                voterAddress,
+                {
+                    connection,
+                    wallet,
+                    publicKey: publicKey
+                }
+            )
             setVotingTokens(prev => prev - voteAmount)
             setVoteAmount(1)
             setVoteError(null)
