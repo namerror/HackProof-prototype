@@ -7,6 +7,7 @@ import { ProjectsProvider } from '@/contexts/ProjectsContext'
 import { ParticipantProvider } from '@/contexts/ParticipantContext'
 import Navigation from '@/components/Navigation'
 import HackerBackground from '@/components/HackerBackground'
+import DevnetFaucet from '@/components/DevnetFaucet'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,6 +37,9 @@ export default function RootLayout({
           <ParticipantProvider>
             <ProjectsProvider>
               <Navigation />
+              <div className="fixed bottom-4 right-4 z-50">
+                <DevnetFaucet />
+              </div>
               {children}
             </ProjectsProvider>
           </ParticipantProvider>
