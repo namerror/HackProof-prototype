@@ -16,22 +16,29 @@ export default function Home() {
       return
     }
 
-    // Try to connect to Phantom first if available
+    // Check if Phantom is available and try direct connection
     const phantomWallet = wallets.find(w => w.adapter.name === 'Phantom')
-    if (phantomWallet) {
+    if (phantomWallet && (window as any).solana?.isPhantom) {
       try {
         setIsConnecting(true)
-        await select(phantomWallet.adapter.name as any)
-        // After selecting, connect to the wallet
-        await connect()
-      } catch (error) {
-        console.error('Error connecting to wallet:', error)
-        // If direct connection fails, show wallet list
-        setShowWalletList(true)
+        // Use Phantom's native connect method directly for better security
+        const response = await (window as any).solana.connect()
+        if (response?.publicKey) {
+          // After Phantom connects, select and connect through adapter
+          await select('Phantom' as any)
+          await connect()
+        }
+      } catch (error: any) {
+        console.error('Error connecting to Phantom:', error)
+        // If user rejects or error occurs, show wallet list
+        if (error.code !== 4001) { // 4001 is user rejection, which is fine
+          setShowWalletList(true)
+        }
       } finally {
         setIsConnecting(false)
       }
     } else {
+      // Show wallet list for other wallets or if Phantom not detected
       setShowWalletList(true)
     }
   }, [wallets, select, connect])
@@ -39,12 +46,34 @@ export default function Home() {
   const handleWalletSelect = useCallback(async (wallet: typeof wallets[0]) => {
     try {
       setIsConnecting(true)
-      await select(wallet.adapter.name as any)
-      // After selecting, connect to the wallet
-      await connect()
+      
+      // For Phantom, use native connect method if available
+      if (wallet.adapter.name === 'Phantom' && (window as any).solana?.isPhantom) {
+        try {
+          const response = await (window as any).solana.connect()
+          if (response?.publicKey) {
+            await select('Phantom' as any)
+            await connect()
+          }
+        } catch (error: any) {
+          if (error.code !== 4001) { // 4001 is user rejection
+            throw error
+          }
+          return // User rejected, don't show error
+        }
+      } else {
+        // For other wallets, use standard adapter flow
+        await select(wallet.adapter.name as any)
+        await connect()
+      }
+      
       setShowWalletList(false)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error selecting wallet:', error)
+      // Show user-friendly error message
+      if (error.code !== 4001) { // Don't show error for user rejection
+        alert(`Failed to connect wallet: ${error.message || 'Unknown error'}`)
+      }
     } finally {
       setIsConnecting(false)
     }
