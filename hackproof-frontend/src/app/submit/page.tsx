@@ -66,7 +66,7 @@ export default function SubmitProjectPage() {
             }, 2000)
         } catch (error) {
             console.error('Error submitting project:', error)
-            alert(error instanceof Error ? error.message : 'Failed to submit project. Please check your NFT_STORAGE_TOKEN and try again.')
+            alert(error instanceof Error ? error.message : 'Failed to submit project. Please check your PINATA_JWT and try again.')
         } finally {
             setIsSubmitting(false)
         }

@@ -33,7 +33,7 @@ function utf8ToBytes(str: string): Uint8Array {
  * @param connection - Solana connection
  * @param wallet - Wallet adapter state
  * @param name - Participant name
- * @param metadataUri - IPFS metadata URI (e.g., "https://<cid>.ipfs.nftstorage.link/metadata.json")
+ * @param metadataUri - IPFS metadata URI (e.g., "https://gateway.pinata.cloud/ipfs/<cid>/metadata.json")
  * @returns Transaction signature
  */
 export async function registerParticipantOnChain(

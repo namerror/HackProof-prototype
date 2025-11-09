@@ -23,7 +23,7 @@ export function createParticipantMetadata(
   return {
     name: `HackProof Participant: ${name}`,
     description: `Verified participant in HackProof hackathon`,
-    image: `https://${imageCid}.ipfs.nftstorage.link`,
+    image: `https://gateway.pinata.cloud/ipfs/${imageCid}`,
     attributes,
     properties: {
       category: 'participant',
@@ -60,7 +60,7 @@ export function createProjectMetadata(
   return {
     name: `HackProof Project: ${name}`,
     description,
-    image: `https://${imageCid}.ipfs.nftstorage.link`,
+    image: `https://gateway.pinata.cloud/ipfs/${imageCid}`,
     attributes,
     properties: {
       category: 'project',
@@ -80,7 +80,7 @@ export function createAchievementMetadata(
   return {
     name: `HackProof Achievement: ${type}`,
     description,
-    image: `https://${imageCid}.ipfs.nftstorage.link`,
+    image: `https://gateway.pinata.cloud/ipfs/${imageCid}`,
     attributes: [
       { trait_type: 'Type', value: type },
       { trait_type: 'Awarded At', value: awardedAt },

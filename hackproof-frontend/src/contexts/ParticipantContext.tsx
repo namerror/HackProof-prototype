@@ -54,9 +54,10 @@ export function ParticipantProvider({ children }: { children: ReactNode }) {
                             name: participantData.name,
                             cachedMetadata: metadata
                         })
-                    } catch (error) {
+                    } catch (error: any) {
                         console.error('Failed to load participant metadata from IPFS:', error)
                         // Still set participant data even if IPFS load fails
+                        // This handles both IPFS errors and missing token errors
                         setParticipant({
                             walletAddress,
                             metadataCid: participantData.metadataCid,
@@ -114,8 +115,9 @@ export function ParticipantProvider({ children }: { children: ReactNode }) {
                 name,
                 cachedMetadata: metadata
             })
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to load participant metadata from IPFS:', error)
+            // Still set participant data even if IPFS load fails
             setParticipant({
                 walletAddress,
                 metadataCid,

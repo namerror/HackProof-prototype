@@ -7,9 +7,6 @@
   "scripts": {
     "test": "ts-mocha tests/**/*.test.ts"
   },
-  "dependencies": {
-    "nft.storage": "^7.0.0"
-  },
   "devDependencies": {
     "@types/node": "^20",
     "sharp": "^0.34.5",

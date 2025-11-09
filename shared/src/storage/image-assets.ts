@@ -1,5 +1,5 @@
 export function getImageUrl(cid: string): string {
-  return `https://${cid}.ipfs.nftstorage.link`;
+  return `https://gateway.pinata.cloud/ipfs/${cid}`;
 }
 
 export function getParticipantBadgeUrl(cid: string): string {

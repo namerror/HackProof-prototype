@@ -35,7 +35,8 @@ const ProjectsContext = createContext<ProjectsContextType | undefined>(undefined
 
 export function ProjectsProvider({ children }: { children: ReactNode }) {
     const [projects, setProjects] = useState<Project[]>([])
-    const client = new IPFSClient()
+    // Lazy-initialize IPFS client - only create when needed
+    const getClient = useCallback(() => new IPFSClient(), [])
 
     const loadProjectMetadata = useCallback(async (projectId: string) => {
         // Use functional update to get current projects state
@@ -44,7 +45,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
             if (!project || project.cachedMetadata) return prev
 
             // Load metadata asynchronously
-            const client = new IPFSClient()
+            const client = getClient()
             client.getMetadata(project.metadataCid)
                 .then((metadata: ProjectMetadata) => {
                     setProjects(current =>
@@ -115,10 +116,44 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         owner: string
     }): Promise<string> => {
         try {
+            const client = getClient()
             // Step 1: Upload project placeholder image to IPFS
-            const defaultProjectUrl = 'https://via.placeholder.com/512/10B981/FFFFFF?text=HackProof+Project'
-            const imageResponse = await fetch(defaultProjectUrl)
-            const imageBlob = await imageResponse.blob()
+            let imageBlob: Blob
+            try {
+                // Try to use the actual project placeholder image if available
+                const projectImagePath = '/project-placeholder.png'
+                const imageResponse = await fetch(projectImagePath)
+                if (imageResponse.ok) {
+                    imageBlob = await imageResponse.blob()
+                } else {
+                    throw new Error('Project image not found')
+                }
+            } catch (error) {
+                // Fallback: Create a simple colored image using canvas
+                console.log('Creating fallback project image...')
+                const canvas = document.createElement('canvas')
+                canvas.width = 512
+                canvas.height = 512
+                const ctx = canvas.getContext('2d')
+                if (ctx) {
+                    // Draw background
+                    ctx.fillStyle = '#10B981'
+                    ctx.fillRect(0, 0, 512, 512)
+                    // Draw text
+                    ctx.fillStyle = '#FFFFFF'
+                    ctx.font = 'bold 48px Arial'
+                    ctx.textAlign = 'center'
+                    ctx.textBaseline = 'middle'
+                    ctx.fillText('HackProof', 256, 200)
+                    ctx.font = '32px Arial'
+                    ctx.fillText('Project', 256, 280)
+                }
+                imageBlob = await new Promise<Blob>((resolve) => {
+                    canvas.toBlob((blob) => {
+                        resolve(blob || new Blob())
+                    }, 'image/png')
+                })
+            }
             const imageCid = await client.uploadImage(imageBlob, 'project-image.png')
 
             // Step 2: Create project metadata
@@ -145,15 +180,24 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
                     description: projectData.description,
                     teamMembers: projectData.teamMembers,
                     githubRepo: projectData.githubLink,
-                    image: `https://${imageCid}.ipfs.nftstorage.link`
+                    image: `https://gateway.pinata.cloud/ipfs/${imageCid}`
                 }
             }
 
             setProjects(prev => [...prev, newProject])
             return newProject.id
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to upload project to IPFS:', error)
-            throw new Error('Failed to upload project. Please check your NFT_STORAGE_TOKEN.')
+            const errorMessage = error?.message || 'Unknown error'
+            
+            // Provide more specific error messages
+            if (errorMessage.includes('PINATA_JWT') || errorMessage.includes('NEXT_PUBLIC_PINATA_JWT')) {
+                throw new Error('Pinata JWT Token not found. Please set NEXT_PUBLIC_PINATA_JWT in your .env.local file and restart the dev server.')
+            } else if (errorMessage.includes('401') || errorMessage.includes('403') || errorMessage.includes('Unauthorized')) {
+                throw new Error('Invalid Pinata JWT Token. Please check your NEXT_PUBLIC_PINATA_JWT in .env.local')
+            } else {
+                throw new Error(`Failed to upload project: ${errorMessage}`)
+            }
         }
     }
 

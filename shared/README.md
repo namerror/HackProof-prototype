@@ -32,11 +32,17 @@ npm install
 
 2. Set up environment variable:
 ```bash
-# Add to .env file in both hackproof/ and hackproof-frontend/
-NFT_STORAGE_TOKEN=your_token_here
+# Add to .env file in hackproof/ and shared/
+PINATA_JWT=your_jwt_token_here
+
+# Add to .env.local file in hackproof-frontend/
+NEXT_PUBLIC_PINATA_JWT=your_jwt_token_here
 ```
 
-Get your token from: https://nft.storage/
+Get your JWT token from: https://app.pinata.cloud/
+- Go to Account Settings → API Keys
+- Create New Key with `pinFileToIPFS` permission
+- Copy the JWT token (starts with `eyJ...`)
 
 ## Usage
 
