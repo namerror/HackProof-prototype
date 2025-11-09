@@ -96,6 +96,14 @@ export default function SetupCheckPage() {
           <p className="text-foreground/70 mt-1">Verify on-chain prerequisites before registering or voting</p>
         </div>
 
+        {/* Debug: Wallet connection status */}
+        <div className="p-3 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-200 text-xs">
+          <div><strong>Wallet Debug:</strong></div>
+          <div>Connected: {connected ? '✓ Yes' : '✗ No'}</div>
+          <div>PublicKey: {publicKey ? publicKey.toBase58() : 'null'}</div>
+          <div>Wallet object: {wallet ? 'exists' : 'null'}</div>
+        </div>
+
         {error && (
           <div className="p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-600">
             {error}
