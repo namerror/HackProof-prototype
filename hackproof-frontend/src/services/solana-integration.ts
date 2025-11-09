@@ -1,4 +1,4 @@
-import { Connection, PublicKey, SystemProgram } from '@solana/web3.js'
+import { Connection, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solana/web3.js'
 import { Program, AnchorProvider, BN } from '@project-serum/anchor'
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, getAccount } from '@solana/spl-token'
 import { HACKPROOF_IDL } from '@/idl/hackproof'
@@ -10,6 +10,49 @@ import { HACKPROOF_PROGRAM_ID } from '@/contexts/WalletContext'
 export function getProgram(connection: Connection, wallet: any): Program {
     const provider = new AnchorProvider(connection, wallet, {})
     return new Program(HACKPROOF_IDL, HACKPROOF_PROGRAM_ID, provider)
+}
+
+/**
+ * Initialize the hackathon (creates hackathon account + voting token mint)
+ */
+export async function initializeHackathonOnChain(
+    connection: Connection,
+    wallet: any,
+    adminPubkey: PublicKey
+): Promise<string> {
+    if (!wallet?.publicKey) throw new Error('Wallet not connected')
+    const program = getProgram(connection, wallet)
+
+    // Derive PDAs
+    const [hackathonPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from('hackathon')],
+        HACKPROOF_PROGRAM_ID
+    )
+    const [votingTokenMintPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from('voting_token_mint')],
+        HACKPROOF_PROGRAM_ID
+    )
+
+    try {
+        const sig = await program.methods
+            .initializeHackathon(adminPubkey)
+            .accounts({
+                hackathon: hackathonPda,
+                votingTokenMint: votingTokenMintPda,
+                payer: wallet.publicKey,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                systemProgram: SystemProgram.programId,
+                rent: SYSVAR_RENT_PUBKEY,
+            })
+            .rpc()
+        return sig
+    } catch (e: any) {
+        // Surface common Anchor errors more readably
+        if (e.message?.includes('custom program error')) {
+            console.error('Program error raw:', e)
+        }
+        throw new Error(`InitializeHackathon failed: ${e.message || e}`)
+    }
 }
 
 /**

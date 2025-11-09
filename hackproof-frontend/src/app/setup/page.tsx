@@ -5,19 +5,22 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import { PublicKey } from '@solana/web3.js'
 import { CheckCircle2, XCircle, Loader2, Info } from 'lucide-react'
 import { HACKPROOF_PROGRAM_ID } from '@/contexts/WalletContext'
-import { isHackathonInitialized, getVotingTokenBalance } from '@/services/solana-integration'
+import { isHackathonInitialized, getVotingTokenBalance, initializeHackathonOnChain } from '@/services/solana-integration'
 
 type Status = 'unknown' | 'ok' | 'fail'
 
 export default function SetupCheckPage() {
   const { connection } = useConnection()
-  const { connected, publicKey } = useWallet()
+  const wallet = useWallet()
+  const { connected, publicKey } = wallet
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const [hackathonStatus, setHackathonStatus] = useState<Status>('unknown')
   const [votingMintStatus, setVotingMintStatus] = useState<Status>('unknown')
+  const [initLoading, setInitLoading] = useState(false)
+  const [initSig, setInitSig] = useState<string | null>(null)
   const [votingBalance, setVotingBalance] = useState<number | null>(null)
 
   const [hackathonPda, votingMintPda] = useMemo(() => {
@@ -132,6 +135,32 @@ export default function SetupCheckPage() {
                 <li>Ensure the program ID matches: <code className="text-xs">{HACKPROOF_PROGRAM_ID.toBase58()}</code></li>
                 <li>Verify the PDA after: <code className="text-xs break-all">{hackathonPda.toBase58()}</code></li>
               </ul>
+              {connected && publicKey && (
+                <button
+                  disabled={initLoading}
+                  onClick={async () => {
+                    setInitLoading(true)
+                    setError(null)
+                    try {
+                      const sig = await initializeHackathonOnChain(connection, wallet, publicKey)
+                      setInitSig(sig)
+                      // Re-run status checks
+                      const initialized = await isHackathonInitialized(connection)
+                      setHackathonStatus(initialized ? 'ok' : 'fail')
+                    } catch (e:any) {
+                      setError(e.message || String(e))
+                    } finally {
+                      setInitLoading(false)
+                    }
+                  }}
+                  className="mt-3 px-3 py-2 text-xs rounded bg-[#00ff9f] text-black disabled:opacity-50"
+                >
+                  {initLoading ? 'Initializing...' : 'Initialize Hackathon'}
+                </button>
+              )}
+              {initSig && (
+                <div className="mt-2 text-xs break-all">Tx: {initSig}</div>
+              )}
             </ActionCard>
           )}
 
