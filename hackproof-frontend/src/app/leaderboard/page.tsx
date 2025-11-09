@@ -3,6 +3,7 @@ import { useProjects, getProjectDisplayData } from '@/contexts/ProjectsContext'
 import { useWallet } from '@solana/wallet-adapter-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { Trophy, Medal, Award, BarChart3, Link2 } from 'lucide-react'
 
 export default function LeaderboardPage() {
     const { projects } = useProjects()
