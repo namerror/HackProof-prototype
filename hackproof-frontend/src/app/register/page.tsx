@@ -230,6 +230,22 @@ export default function RegisterPage() {
                 console.error('Solana registration failed:', solanaError)
                 // Surface the error and stop; we shouldn't mark success without tokens
                 const errorMessage = solanaError?.message || 'Unknown error'
+                
+                // Check for Phantom trust/security errors
+                if (errorMessage.includes('trust') || errorMessage.includes('unsafe') || errorMessage.includes('not trusted') || 
+                    errorMessage.includes('User rejected') || errorMessage.includes('4001') ||
+                    solanaError?.code === 4001 || solanaError?.code === -32002) {
+                    throw new Error(
+                        `Phantom wallet blocked the transaction. Please:\n\n` +
+                        `1. Make sure you're using HTTPS or localhost\n` +
+                        `2. Click the Phantom extension icon\n` +
+                        `3. Go to Settings > Trusted Apps\n` +
+                        `4. Add this website to your trusted apps\n` +
+                        `5. Try again\n\n` +
+                        `Or approve the transaction when Phantom prompts you.`
+                    )
+                }
+                
                 throw new Error(`Solana registration failed: ${errorMessage}`)
             }
             
@@ -248,7 +264,13 @@ export default function RegisterPage() {
         } catch (error: any) {
             console.error('Error in registration process:', error)
             const errorMessage = error?.message || 'Unknown error occurred'
-            alert(`Registration failed: ${errorMessage}\n\nCheck the browser console for more details.`)
+            
+            // Show user-friendly error with instructions for trust issues
+            if (errorMessage.includes('Phantom wallet blocked') || errorMessage.includes('trust')) {
+                setError(errorMessage)
+            } else {
+                alert(`Registration failed: ${errorMessage}\n\nCheck the browser console for more details.`)
+            }
         } finally {
             setIsMinting(false)
             setUploadProgress('')
@@ -429,10 +451,10 @@ export default function RegisterPage() {
 
                         {error && (
                             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600">
-                                <p>{error}</p>
+                                <p className="whitespace-pre-line">{error}</p>
                             </div>
                         )}
-                        
+
                         <div className="pt-4">
                             <button
                                 type="submit"
