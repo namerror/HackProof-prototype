@@ -1,10 +1,14 @@
 'use client'
 import { useState } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { HACKPROOF_PROGRAM_ID } from '@/contexts/WalletContext'
+import { useConnection } from '@solana/wallet-adapter-react'
 import Link from 'next/link'
 
 export default function RegisterPage() {
     const { connected } = useWallet()
+    const { connection } = useConnection()
+    const { publicKey, sendTransaction } = useWallet() // Add publicKey and sendTransaction
     const [formData, setFormData] = useState({
         name: '',
         project: '',
@@ -22,7 +26,7 @@ export default function RegisterPage() {
     }
 
     const handleMintNFT = async () => {
-        if (!connected) {
+        if (!connected || !publicKey) {
             alert('Please connect your wallet first')
             return
         }
@@ -34,11 +38,20 @@ export default function RegisterPage() {
 
         setIsMinting(true)
 
-        // TODO: Implement actual NFT minting logic here
-        // For now, simulate the minting process
         try {
-            await new Promise(resolve => setTimeout(resolve, 2000)) // Simulate API call
+            // ADD ACTUAL SOLANA CALL HERE
+            console.log("Calling Solana program:", HACKPROOF_PROGRAM_ID.toString())
+            console.log("Registering:", formData.name)
+            
+            // TODO: Replace with actual transaction
+            // You'll need to:
+            // 1. Create transaction to call register_participant
+            // 2. Send transaction using sendTransaction
+            // 3. Wait for confirmation
+            
+            await new Promise(resolve => setTimeout(resolve, 2000))
             setMintSuccess(true)
+            
         } catch (error) {
             console.error('Error minting NFT:', error)
             alert('Failed to mint NFT. Please try again.')
