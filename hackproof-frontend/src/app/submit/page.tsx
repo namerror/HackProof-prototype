@@ -48,7 +48,8 @@ export default function SubmitProjectPage() {
                 .map(m => m.trim())
                 .filter(m => m.length > 0)
 
-            const id = addProject({
+            // addProject now uploads to IPFS and returns a Promise
+            const id = await addProject({
                 name: formData.name,
                 description: formData.description,
                 teamMembers: teamMembersList,
@@ -65,7 +66,7 @@ export default function SubmitProjectPage() {
             }, 2000)
         } catch (error) {
             console.error('Error submitting project:', error)
-            alert('Failed to submit project. Please try again.')
+            alert(error instanceof Error ? error.message : 'Failed to submit project. Please check your NFT_STORAGE_TOKEN and try again.')
         } finally {
             setIsSubmitting(false)
         }

@@ -1,6 +1,6 @@
 'use client'
 import { useParams, useRouter } from 'next/navigation'
-import { useProjects } from '@/contexts/ProjectsContext'
+import { useProjects, getProjectDisplayData } from '@/contexts/ProjectsContext'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -17,6 +17,7 @@ export default function ProjectPage() {
 
     const projectId = params.id as string
     const project = projects.find(p => p.id === projectId)
+    const displayData = project ? getProjectDisplayData(project) : null
 
     useEffect(() => {
         // Check if project exists
@@ -87,14 +88,14 @@ export default function ProjectPage() {
                 <div className="bg-background/80 backdrop-blur-sm border border-foreground/10 rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-12 shadow-xl">
                     <div className="space-y-6">
                         <div>
-                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">{project.name}</h1>
-                            <p className="text-lg text-foreground/70 leading-relaxed">{project.description}</p>
+                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">{displayData?.name || 'Loading...'}</h1>
+                            <p className="text-lg text-foreground/70 leading-relaxed">{displayData?.description || 'Loading project details...'}</p>
                         </div>
 
-                        {project.githubLink && (
+                        {displayData?.githubLink && (
                             <div>
                                 <a
-                                    href={project.githubLink}
+                                    href={displayData.githubLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-blue-600 hover:underline text-lg flex items-center gap-2"
@@ -104,18 +105,18 @@ export default function ProjectPage() {
                             </div>
                         )}
 
-                        {project.teamMembers.length > 0 && (
+                        {displayData && displayData.teamMembers.length > 0 && (
                             <div>
                                 <h3 className="text-sm font-medium text-foreground/60 mb-2">Team Members</h3>
-                                <p className="text-base">{project.teamMembers.join(', ')}</p>
+                                <p className="text-base">{displayData.teamMembers.join(', ')}</p>
                             </div>
                         )}
 
                         <div className="flex items-center gap-4 pt-4 border-t border-foreground/10">
                             <div>
-                                <div className="text-3xl font-bold text-blue-600">{project.votes}</div>
+                                <div className="text-3xl font-bold text-blue-600">{displayData?.votes || 0}</div>
                                 <div className="text-sm text-foreground/60">
-                                    {project.votes === 1 ? 'vote' : 'votes'}
+                                    {(displayData?.votes || 0) === 1 ? 'vote' : 'votes'}
                                 </div>
                             </div>
                         </div>

@@ -16,6 +16,15 @@ export class IPFSClient {
     return cid;
   }
 
+  /**
+   * Get the full IPFS metadata URI from a CID
+   * @param cid - IPFS content identifier
+   * @returns Full metadata URI (e.g., "https://<cid>.ipfs.nftstorage.link/metadata.json")
+   */
+  getMetadataUri(cid: string): string {
+    return `https://${cid}.ipfs.nftstorage.link/metadata.json`;
+  }
+
   async uploadImage(file: File | Blob, filename: string): Promise<string> {
     const nftFile = new File([file], filename, { type: file.type });
     const cid = await this.client.storeBlob(nftFile);
