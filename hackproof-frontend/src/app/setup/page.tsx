@@ -2,8 +2,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useConnection, useWallet } from '@solana/wallet-adapter-react'
+import { useWalletModal } from '@solana/wallet-adapter-react-ui'
 import { PublicKey } from '@solana/web3.js'
-import { CheckCircle2, XCircle, Loader2, Info } from 'lucide-react'
+import { CheckCircle2, XCircle, Loader2, Info, Wallet } from 'lucide-react'
 import { HACKPROOF_PROGRAM_ID } from '@/contexts/WalletContext'
 import { isHackathonInitialized, getVotingTokenBalance, initializeHackathonOnChain } from '@/services/solana-integration'
 
@@ -13,6 +14,7 @@ export default function SetupCheckPage() {
   const { connection } = useConnection()
   const wallet = useWallet()
   const { connected, publicKey } = wallet
+  const { setVisible } = useWalletModal()
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -103,6 +105,23 @@ export default function SetupCheckPage() {
           <div>PublicKey: {publicKey ? publicKey.toBase58() : 'null'}</div>
           <div>Wallet object: {wallet ? 'exists' : 'null'}</div>
         </div>
+
+        {/* Wallet connection prompt */}
+        {!connected && (
+          <div className="p-4 rounded-lg border-2 border-[#00ff9f]/30 bg-[#00ff9f]/5 text-center">
+            <Wallet className="w-12 h-12 mx-auto mb-3 text-[#00ff9f]" />
+            <h2 className="text-lg font-semibold mb-2">Connect Your Wallet</h2>
+            <p className="text-sm text-foreground/70 mb-4">
+              Connect your wallet to check your voting token balance and initialize the hackathon
+            </p>
+            <button
+              onClick={() => setVisible(true)}
+              className="px-6 py-3 bg-[#00ff9f] text-black rounded-lg font-semibold hover:bg-[#00cc7f] transition-colors"
+            >
+              Connect Wallet
+            </button>
+          </div>
+        )}
 
         {error && (
           <div className="p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-600">
