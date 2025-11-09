@@ -72,7 +72,7 @@ export async function createProjectOnChain(
         const projectTokenAccount = getAssociatedTokenAddressSync(
             votingTokenMintPda,
             projectPda,
-            false,
+            true,
             TOKEN_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
         )
@@ -144,10 +144,41 @@ export async function voteOnProjectOnChain(
         const projectTokenAccount = getAssociatedTokenAddressSync(
             votingTokenMintPda,
             projectPda,
-            false,
+            true,
             TOKEN_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
         )
+
+        // Get voter's participant info for checking if they have a project
+        const voterParticipant = await program.account.participant.fetch(voterParticipantPda)
+        
+        // Initialize remaining accounts array
+        const remainingAccounts = []
+
+        // If voter has a project, add it and its token account to remaining accounts
+        if (voterParticipant.project) {
+            // Add voter's project account
+            remainingAccounts.push({
+                pubkey: voterParticipant.project,
+                isWritable: true,
+                isSigner: false,
+            })
+
+            // Get and add voter's project token account
+            const voterProjectTokenAccount = getAssociatedTokenAddressSync(
+                votingTokenMintPda,
+                voterParticipant.project,
+                true,
+                TOKEN_PROGRAM_ID,
+                ASSOCIATED_TOKEN_PROGRAM_ID
+            )
+
+            remainingAccounts.push({
+                pubkey: voterProjectTokenAccount,
+                isWritable: true,
+                isSigner: false,
+            })
+        }
 
         // Call the Solana program
         const signature = await program.methods
@@ -162,6 +193,7 @@ export async function voteOnProjectOnChain(
                 voter: voterPublicKey,
                 tokenProgram: TOKEN_PROGRAM_ID,
             })
+            .remainingAccounts(remainingAccounts)
             .rpc()
 
         return signature
