@@ -78,38 +78,7 @@ pub struct RegisterParticipant<'info> {
     
     #[account(mut)]
     pub authority: Signer<'info>,
-    
-    /*
-    #[account(
-        init,
-        payer = authority,
-        mint::decimals = 0,
-        mint::authority = authority,
-        mint::freeze_authority = authority,
-    )]
-    pub mint: Account<'info, Mint>, */
-    
-    /*
-    #[account(
-        init,
-        payer = authority,
-        associated_token::mint = mint,
-        associated_token::authority = authority,
-    )]
-    pub token_account: Account<'info, TokenAccount>, */
-    
-    /// Metadata account - validated in CPI
-    /// CHECK: This is the metadata account for the NFT, validated in the CPI call
-    #[account(mut)]
-    pub metadata: UncheckedAccount<'info>,
-    
-    // Programs
-    /*
-    pub token_program: Program<'info, Token>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub token_metadata_program: Program<'info, Metadata>,
-    pub rent: Sysvar<'info, Rent>,
-    */
+
     pub system_program: Program<'info, System>,
 }
 

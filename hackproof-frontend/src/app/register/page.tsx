@@ -1,19 +1,23 @@
 'use client'
 import { useState } from 'react'
-import { useWallet } from '@solana/wallet-adapter-react'
+import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react'
 import { HACKPROOF_PROGRAM_ID } from '@/contexts/WalletContext'
 import { useConnection } from '@solana/wallet-adapter-react'
 import Link from 'next/link'
+import { Program, AnchorProvider } from '@project-serum/anchor'
+import { PublicKey, SystemProgram } from '@solana/web3.js'
+import { HACKPROOF_IDL } from '@/idl/hackproof'
 
 export default function RegisterPage() {
-    const { connected } = useWallet()
     const { connection } = useConnection()
-    const { publicKey, sendTransaction } = useWallet() // Add publicKey and sendTransaction
+    const { connected, publicKey, sendTransaction } = useWallet() // Add publicKey and sendTransaction
+    const wallet = useAnchorWallet()
     const [formData, setFormData] = useState({
         name: '',
         project: '',
         description: ''
     })
+    const [error, setError] = useState<string | null>(null)
     const [isMinting, setIsMinting] = useState(false)
     const [mintSuccess, setMintSuccess] = useState(false)
 
@@ -25,36 +29,64 @@ export default function RegisterPage() {
         }))
     }
 
+    const createMetadataJson = () => {
+        return JSON.stringify({
+            name: formData.name,
+            project: formData.project,
+            description: formData.description,
+            created_at: new Date().toISOString()
+        })
+    }
+
     const handleMintNFT = async () => {
-        if (!connected || !publicKey) {
-            alert('Please connect your wallet first')
+        if (!connected || !publicKey || !wallet) {
+            setError('Please connect your wallet first')
             return
         }
 
         if (!formData.name || !formData.project || !formData.description) {
-            alert('Please fill in all fields')
+            setError('Please fill in all fields')
             return
         }
 
         setIsMinting(true)
+        setError(null)
 
         try {
-            // ADD ACTUAL SOLANA CALL HERE
             console.log("Calling Solana program:", HACKPROOF_PROGRAM_ID.toString())
-            console.log("Registering:", formData.name)
             
-            // TODO: Replace with actual transaction
-            // You'll need to:
-            // 1. Create transaction to call register_participant
-            // 2. Send transaction using sendTransaction
-            // 3. Wait for confirmation
+            const provider = new AnchorProvider(connection, wallet, {})
+            const program = new Program(HACKPROOF_IDL, HACKPROOF_PROGRAM_ID, provider)
+
+            // Create metadata
+            const metadata = createMetadataJson()
             
-            await new Promise(resolve => setTimeout(resolve, 2000))
+            // In a production environment, you would upload this to IPFS or Arweave
+            // For now, we'll use base64 encoding as a temporary solution
+            const metadataUri = `data:application/json;base64,${Buffer.from(metadata).toString('base64')}`
+
+            // Derive participant PDA
+            const [participantPda] = PublicKey.findProgramAddressSync(
+                [Buffer.from("participant"), publicKey.toBuffer()],
+                HACKPROOF_PROGRAM_ID
+            )            
+
+            // Call your Solana program
+            const tx = await program.methods
+                .registerParticipant(formData.name, metadataUri)
+                .accounts({
+                    participant: participantPda,
+                    authority: publicKey,
+                    systemProgram: SystemProgram.programId,
+                })
+                .rpc()
+
+            console.log("Registration successful! TX:", tx)
             setMintSuccess(true)
-            
+
         } catch (error) {
-            console.error('Error minting NFT:', error)
-            alert('Failed to mint NFT. Please try again.')
+            console.error('Registration failed:', error)
+            setError(error instanceof Error ? error.message : 'Registration failed')
         } finally {
             setIsMinting(false)
         }
@@ -108,7 +140,7 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="bg-background/80 backdrop-blur-sm border border-foreground/10 rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-12 shadow-xl">
-                    <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleMintNFT() }}>
+                    <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
                         <div>
                             <label htmlFor="name" className="block text-sm font-medium mb-2">
                                 Name *
@@ -157,6 +189,12 @@ export default function RegisterPage() {
                             />
                         </div>
 
+                        {error && (
+                            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600">
+                                <p>{error}</p>
+                            </div>
+                        )}
+                        
                         <div className="pt-4">
                             <button
                                 type="submit"
