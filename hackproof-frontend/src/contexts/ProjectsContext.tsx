@@ -47,6 +47,7 @@ interface ProjectsContextType {
     hasUserSubmittedProject: (walletAddress: string) => boolean
     isProjectNameTaken: (projectName: string) => boolean
     refreshProjects: () => Promise<void>
+    publishProject?: (projectId: string) => Promise<string>
 }
 
 const ProjectsContext = createContext<ProjectsContextType | undefined>(undefined)
@@ -409,6 +410,49 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         }
     }
 
+    // Publish a local-only project to the Solana program (create on-chain project)
+    const publishProject = async (projectId: string): Promise<string> => {
+        const project = projects.find(p => p.id === projectId)
+        if (!project) throw new Error('Project not found')
+
+        if (!project.cachedMetadata) throw new Error('Project metadata missing')
+
+        // Ensure wallet connected and is owner
+        const ownerPubkey = wallet.publicKey?.toString()
+        if (!wallet || !ownerPubkey) throw new Error('Wallet not connected')
+        if (ownerPubkey.toLowerCase() !== project.owner.toLowerCase()) throw new Error('Only the project owner can publish this project on-chain')
+
+        try {
+            const publicKey = new PublicKey(project.owner)
+
+            const maxTeamSize = (project.cachedMetadata.teamMembers && project.cachedMetadata.teamMembers.length) || 1
+
+            const txSignature = await createProjectOnChain(
+                connection,
+                wallet,
+                project.cachedMetadata.name,
+                project.cachedMetadata.description,
+                project.cachedMetadata.githubRepo || '',
+                maxTeamSize,
+                publicKey
+            )
+
+            // Derive PDA for project
+            const [projectPdaPubkey] = PublicKey.findProgramAddressSync(
+                [Buffer.from('project'), publicKey.toBuffer(), Buffer.from(project.cachedMetadata.name)],
+                HACKPROOF_PROGRAM_ID
+            )
+
+            // Update local state to mark project as on-chain
+            setProjects(prev => prev.map(p => p.id === projectId ? { ...p, projectPda: projectPdaPubkey.toString(), solanaTxSignature: txSignature } : p))
+
+            return txSignature
+        } catch (error: any) {
+            console.error('Failed to publish project on-chain:', error)
+            throw error
+        }
+    }
+
     const voteOnProject = async (
         projectId: string,
         votes: number,
@@ -464,7 +508,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
     }
 
     return (
-        <ProjectsContext.Provider value={{ projects, addProject, voteOnProject, loadProjectMetadata, getUserProject, hasUserSubmittedProject, isProjectNameTaken, refreshProjects: loadAllProjects }}>
+        <ProjectsContext.Provider value={{ projects, addProject, voteOnProject, loadProjectMetadata, getUserProject, hasUserSubmittedProject, isProjectNameTaken, refreshProjects: loadAllProjects, publishProject }}>
             {children}
         </ProjectsContext.Provider>
     )

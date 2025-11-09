@@ -3,10 +3,45 @@ import { useProjects, getProjectDisplayData } from '@/contexts/ProjectsContext'
 import { useWallet } from '@solana/wallet-adapter-react'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
+import { useState } from 'react'
+import { PublicKey } from '@solana/web3.js'
 
 export default function ProjectsGalleryPage() {
     const { projects } = useProjects()
     const { connected } = useWallet()
+    const { publicKey } = useWallet()
+    const { publishProject, refreshProjects } = useProjects()
+    const [publishing, setPublishing] = useState<Record<string, boolean>>({})
+
+    const handlePublish = async (projectId: string) => {
+        if (!publishProject) return
+        try {
+            setPublishing(prev => ({ ...prev, [projectId]: true }))
+            const sig = await publishProject(projectId)
+            // Optionally: open Solscan for the tx
+            window.open(`https://solscan.io/tx/${sig}?cluster=devnet`, '_blank')
+        } catch (e: any) {
+            console.error('Publish failed:', e)
+            alert(e?.message || 'Failed to publish project on-chain')
+        } finally {
+            setPublishing(prev => ({ ...prev, [projectId]: false }))
+        }
+    }
+
+    const handleRefresh = async () => {
+        try {
+            await refreshProjects()
+            // Clear localStorage fallback to prefer on-chain data
+            // Only clear if there are on-chain projects found
+            const stored = localStorage.getItem('hackproof-project-cids')
+            if (stored) {
+                // Do not clear blindly — keep it but log for debugging
+                console.log('Local fallback exists; refresh attempted')
+            }
+        } catch (e) {
+            console.error('Refresh failed', e)
+        }
+    }
 
     return (
         <main className="min-h-screen px-4 py-8 sm:py-12">
@@ -32,6 +67,12 @@ export default function ProjectsGalleryPage() {
                                 Submit Project
                             </Link>
                         )}
+                        <button
+                            onClick={handleRefresh}
+                            className="px-4 py-2 bg-background/80 border border-foreground/10 rounded font-medium text-sm hover:bg-background/90"
+                        >
+                            Refresh
+                        </button>
                     </div>
                 </div>
 
@@ -66,6 +107,24 @@ export default function ProjectsGalleryPage() {
                                             <h3 className="text-xl font-bold mb-2 group-hover:text-cyan-400 transition-colors">
                                                 {displayData.name}
                                             </h3>
+                                            <div className="mt-1">
+                                                {project.projectPda ? (
+                                                    <span className="text-xs inline-block bg-green-600/10 text-green-400 px-2 py-1 rounded">On-chain</span>
+                                                ) : (
+                                                    <span className="text-xs inline-block bg-yellow-600/10 text-yellow-400 px-2 py-1 rounded">Local only</span>
+                                                )}
+                                                {project.solanaTxSignature && (
+                                                    <a
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        href={`https://solscan.io/tx/${project.solanaTxSignature}?cluster=devnet`}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="ml-2 text-xs text-blue-400 underline"
+                                                    >
+                                                        View tx
+                                                    </a>
+                                                )}
+                                            </div>
                                             <p className="text-foreground/70 text-sm line-clamp-3">
                                                 {displayData.description}
                                             </p>
@@ -93,6 +152,18 @@ export default function ProjectsGalleryPage() {
                                             {displayData.teamMembers.length > 0 && (
                                                 <div className="text-xs text-foreground/60">
                                                     {displayData.teamMembers.length} {displayData.teamMembers.length === 1 ? 'member' : 'members'}
+                                                </div>
+                                            )}
+                                            {/* Publish button for local projects owned by connected wallet */}
+                                            {!project.projectPda && publicKey && project.owner.toLowerCase() === publicKey.toString().toLowerCase() && (
+                                                <div className="ml-4">
+                                                    <button
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handlePublish(project.id) }}
+                                                        disabled={publishing[project.id]}
+                                                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+                                                    >
+                                                        {publishing[project.id] ? 'Publishing...' : 'Publish on-chain'}
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
