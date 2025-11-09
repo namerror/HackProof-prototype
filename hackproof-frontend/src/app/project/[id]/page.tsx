@@ -110,7 +110,7 @@ export default function ProjectPage() {
                     <h1 className="text-2xl font-bold mb-2">Project Not Found</h1>
                     <Link
                         href="/projects"
-                        className="text-blue-600 hover:underline"
+                        className="text-cyan-400 hover:text-cyan-300 hover:underline font-mono"
                     >
                         Back to Gallery
                     </Link>
@@ -135,7 +135,7 @@ export default function ProjectPage() {
                 </Link>
 
                 {/* Project Info */}
-                <div className="bg-background/80 backdrop-blur-sm border border-foreground/10 rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-12 shadow-xl">
+                <div className="bg-background/80 backdrop-blur-sm border border-foreground/10 rounded p-6 sm:p-8 md:p-12 shadow-xl">
                     <div className="space-y-6">
                         <div>
                             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">{displayData?.name || 'Loading...'}</h1>
@@ -148,7 +148,7 @@ export default function ProjectPage() {
                                     href={displayData.githubLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-blue-600 hover:underline text-lg flex items-center gap-2"
+                                    className="text-cyan-400 hover:text-cyan-300 hover:underline text-lg flex items-center gap-2 font-mono"
                                 >
                                     🔗 View on GitHub
                                 </a>
@@ -164,7 +164,7 @@ export default function ProjectPage() {
 
                         <div className="flex items-center gap-4 pt-4 border-t border-foreground/10">
                             <div>
-                                <div className="text-3xl font-bold text-blue-600">{displayData?.votes || 0}</div>
+                                <div className="text-3xl font-bold text-cyan-400 font-mono">{displayData?.votes || 0}</div>
                                 <div className="text-sm text-foreground/60">
                                     {(displayData?.votes || 0) === 1 ? 'vote' : 'votes'}
                                 </div>
@@ -175,7 +175,7 @@ export default function ProjectPage() {
 
                 {/* Voting Section */}
                 {connected ? (
-                    <div className="bg-background/80 backdrop-blur-sm border border-foreground/10 rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-xl">
+                    <div className="bg-background/80 backdrop-blur-sm border border-foreground/10 rounded p-6 sm:p-8 shadow-xl">
                         <div className="space-y-6">
                             <div>
                                 <h2 className="text-2xl font-bold mb-2">Vote for this Project</h2>
@@ -183,7 +183,7 @@ export default function ProjectPage() {
                             </div>
 
                             {!isRegistered && (
-                                <div className="bg-[#00ff9f]/10 border border-[#00ff9f]/30 rounded-lg p-4 flex items-start gap-3">
+                                <div className="bg-[#00ff9f]/10 border border-[#00ff9f]/30 rounded p-4 flex items-start gap-3">
                                     <AlertTriangle className="w-5 h-5 text-[#00ff9f] flex-shrink-0 mt-0.5" />
                                     <p className="text-sm text-[#00ff9f] font-mono">
                                         You must register as a participant before voting. <Link href="/register" className="underline font-semibold hover:text-[#00cc7f]">Register here</Link>
@@ -192,7 +192,7 @@ export default function ProjectPage() {
                             )}
 
                             {project && publicKey && project.owner.toLowerCase() === publicKey.toString().toLowerCase() && (
-                                <div className="bg-[#00ff9f]/10 border border-[#00ff9f]/30 rounded-lg p-4 flex items-start gap-3">
+                                <div className="bg-[#00ff9f]/10 border border-[#00ff9f]/30 rounded p-4 flex items-start gap-3">
                                     <XCircle className="w-5 h-5 text-[#00ff9f] flex-shrink-0 mt-0.5" />
                                     <p className="text-sm text-[#00ff9f] font-mono">
                                         You cannot vote for your own project!
@@ -201,12 +201,12 @@ export default function ProjectPage() {
                             )}
 
                             {voteError && (
-                                <div className="bg-[#00ff9f]/10 border border-[#00ff9f]/30 rounded-lg p-4">
+                                <div className="bg-[#00ff9f]/10 border border-[#00ff9f]/30 rounded p-4">
                                     <p className="text-sm text-[#00ff9f] font-mono">{voteError}</p>
                                 </div>
                             )}
 
-                            <div className="bg-[#00ff9f]/10 border border-[#00ff9f]/30 rounded-lg p-4 mb-4">
+                            <div className="bg-[#00ff9f]/10 border border-[#00ff9f]/30 rounded p-4 mb-4">
                                 <div className="text-sm text-[#00ff9f]/80 mb-1 font-mono">Your Voting Tokens</div>
                                 <div className="text-2xl font-bold text-[#00ff9f] font-mono">{votingTokens} $HACK</div>
                             </div>
@@ -227,7 +227,7 @@ export default function ProjectPage() {
                                             setVoteAmount(Math.min(Math.max(1, val), votingTokens))
                                             setVoteError(null) // Clear error when user changes input
                                         }}
-                                        className="w-full px-4 py-3 rounded-lg border border-foreground/20 bg-background focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                        className="w-full px-4 py-3 rounded border border-foreground/20 bg-background focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all font-mono"
                                         disabled={isVoting || votingTokens === 0 || !isRegistered || !!(project && publicKey && project.owner.toLowerCase() === publicKey.toString().toLowerCase())}
                                     />
                                 </div>
@@ -240,7 +240,7 @@ export default function ProjectPage() {
                                         !isRegistered ||
                                         !!(project && publicKey && project.owner.toLowerCase() === publicKey.toString().toLowerCase())
                                     }
-                                    className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-500 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl border border-blue-500/50 hover:scale-105 disabled:hover:scale-100"
+                                    className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded font-semibold hover:from-cyan-400 hover:to-blue-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-[0_0_30px_rgba(0,255,255,0.4)] border border-cyan-400/50 hover:scale-105 disabled:hover:scale-100 font-mono"
                                 >
                                     {isVoting ? 'Voting...' : 'Vote'}
                                 </button>
@@ -248,11 +248,11 @@ export default function ProjectPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-background/50 backdrop-blur-sm border border-foreground/10 rounded-xl p-6 text-center">
+                    <div className="bg-background/50 backdrop-blur-sm border border-foreground/10 rounded p-6 text-center">
                         <p className="text-foreground/70 mb-4">Connect your wallet to vote on this project</p>
                         <Link
                             href="/"
-                            className="inline-block px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-500 hover:to-blue-600 transition-all shadow-xl hover:shadow-2xl border border-blue-500/50"
+                            className="inline-block px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded font-semibold hover:from-cyan-400 hover:to-blue-400 transition-all shadow-xl hover:shadow-[0_0_30px_rgba(0,255,255,0.4)] border border-cyan-400/50 font-mono"
                         >
                             Connect Wallet
                         </Link>
@@ -260,14 +260,14 @@ export default function ProjectPage() {
                 )}
 
                 {/* QR Code Section */}
-                <div className="bg-background/80 backdrop-blur-sm border border-foreground/10 rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-xl">
+                <div className="bg-background/80 backdrop-blur-sm border border-foreground/10 rounded p-6 sm:p-8 shadow-xl">
                     <div className="flex flex-col items-center space-y-4">
                         <h2 className="text-2xl font-bold">Share this Project</h2>
                         <p className="text-foreground/70 text-center">
                             Scan the QR code to view and vote on this project
                         </p>
                         {projectUrl && (
-                            <div className="bg-white p-4 rounded-lg">
+                            <div className="bg-white p-4 rounded">
                                 <QRCodeSVG
                                     value={projectUrl}
                                     size={200}

@@ -42,7 +42,7 @@ export default function LeaderboardPage() {
                 </div>
 
                 {topProjects.length === 0 ? (
-                    <div className="text-center py-16 bg-[#1a1a1a]/80 backdrop-blur-sm border border-[#00ff9f]/20 rounded-xl">
+                    <div className="text-center py-16 bg-[#1a1a1a]/80 backdrop-blur-sm border border-[#00ff9f]/20 rounded">
                         <div className="mb-4 flex justify-center">
                             <BarChart3 className="w-16 h-16 text-[#00ff9f]/60" />
                         </div>
@@ -67,7 +67,7 @@ export default function LeaderboardPage() {
                                 <Link
                                     key={project.id}
                                     href={`/project/${project.id}`}
-                                    className={`block bg-gradient-to-r ${getRankColor(index)} border-2 rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-2xl hover:shadow-[0_0_40px_rgba(34,197,94,0.3)] transition-all hover:scale-[1.02] group`}
+                                    className={`block bg-gradient-to-r ${getRankColor(index)} border-2 rounded p-6 sm:p-8 shadow-2xl hover:shadow-[0_0_40px_rgba(0,255,159,0.3)] transition-all hover:scale-[1.02] group`}
                                 >
                                     <div className="flex items-start justify-between gap-6">
                                         <div className="flex items-start gap-6 flex-1">
@@ -121,7 +121,7 @@ export default function LeaderboardPage() {
                             <div className="text-center pt-6">
                                 <Link
                                     href="/projects"
-                                    className="inline-block px-8 py-4 bg-white/5 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/10 transition-all shadow-xl hover:shadow-2xl border border-white/10"
+                                    className="inline-block px-8 py-4 bg-gradient-to-r from-[#00ff9f] to-[#00cc7f] text-[#0f0f0f] rounded font-semibold hover:from-[#00cc7f] hover:to-[#00ff9f] transition-all shadow-xl hover:shadow-[0_0_30px_rgba(0,255,159,0.5)] border border-[#00ff9f]/50 font-mono"
                                 >
                                     View All Projects ({projects.length})
                                 </Link>
@@ -134,14 +134,14 @@ export default function LeaderboardPage() {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
                     <Link
                         href="/projects"
-                        className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-500 hover:to-blue-600 transition-all shadow-xl hover:shadow-2xl border border-blue-500/50 text-center"
+                        className="px-8 py-4 bg-gradient-to-r from-[#00ff9f] to-[#00cc7f] text-[#0f0f0f] rounded font-semibold hover:from-[#00cc7f] hover:to-[#00ff9f] transition-all shadow-xl hover:shadow-[0_0_30px_rgba(0,255,159,0.5)] border border-[#00ff9f]/50 text-center font-mono"
                     >
                         View All Projects
                     </Link>
                     {connected && (
                         <Link
                             href="/submit"
-                            className="px-8 py-4 bg-white/5 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/10 transition-all shadow-xl hover:shadow-2xl border border-white/10 text-center"
+                            className="px-8 py-4 bg-[#1a1a1a]/50 backdrop-blur-sm text-[#00ff9f] rounded font-semibold hover:bg-[#1a1a1a]/70 hover:shadow-[0_0_20px_rgba(0,255,159,0.3)] transition-all shadow-xl hover:shadow-2xl border border-[#00ff9f]/20 text-center font-mono"
                         >
                             Submit Project
                         </Link>
