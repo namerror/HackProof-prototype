@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useEffect, useState } from 'react'
+import { Rocket } from 'lucide-react'
 
 export default function Navigation() {
     const { connected } = useWallet()
@@ -15,16 +16,17 @@ export default function Navigation() {
 
     if (!mounted) {
         return (
-            <nav className="w-full border-b border-foreground/10 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+            <nav className="w-full border-b border-[#00ff9f]/20 bg-[#1a1a1a]/80 backdrop-blur-sm sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16">
                         <div className="flex items-center gap-8">
-                            <Link href="/" className="text-xl font-bold hover:opacity-80 transition-opacity">
-                                🚀 HackProof
+                            <Link href="/" className="text-xl font-bold hover:opacity-80 transition-opacity font-mono text-[#00ff9f] flex items-center gap-2">
+                                <Rocket className="w-5 h-5" />
+                                HackProof
                             </Link>
                         </div>
                         <div className="flex items-center gap-4">
-                            <button className="bg-gray-400 text-white rounded-lg px-4 py-2 font-semibold opacity-50">
+                            <button className="bg-[#1a1a1a] text-[#00ff9f]/50 rounded-lg px-4 py-2 font-semibold opacity-50 font-mono">
                                 Loading...
                             </button>
                         </div>
@@ -35,30 +37,31 @@ export default function Navigation() {
     }
 
     return (
-        <nav className="w-full border-b border-foreground/10 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+        <nav className="w-full border-b border-[#00ff9f]/20 bg-[#1a1a1a]/80 backdrop-blur-sm sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     <div className="flex items-center gap-6 sm:gap-8">
-                        <Link href="/" className="text-xl font-bold hover:opacity-80 transition-opacity flex items-center">
-                            🚀 HackProof
+                        <Link href="/" className="text-xl font-bold hover:opacity-80 transition-opacity flex items-center gap-2 font-mono text-[#00ff9f]">
+                            <Rocket className="w-5 h-5" />
+                            HackProof
                         </Link>
                         {connected && (
                             <div className="hidden md:flex items-center gap-4 h-full">
                                 <Link
                                     href="/projects"
-                                    className="text-sm font-medium hover:text-green-400 transition-colors flex items-center h-full"
+                                    className="text-sm font-medium hover:text-[#00ff9f] transition-colors flex items-center h-full font-mono"
                                 >
                                     Projects
                                 </Link>
                                 <Link
                                     href="/leaderboard"
-                                    className="text-sm font-medium hover:text-green-400 transition-colors flex items-center h-full"
+                                    className="text-sm font-medium hover:text-[#00ff9f] transition-colors flex items-center h-full font-mono"
                                 >
                                     Leaderboard
                                 </Link>
                                 <Link
                                     href="/submit"
-                                    className="text-sm font-medium hover:text-green-400 transition-colors flex items-center h-full"
+                                    className="text-sm font-medium hover:text-[#00ff9f] transition-colors flex items-center h-full font-mono"
                                 >
                                     Submit
                                 </Link>
@@ -66,11 +69,10 @@ export default function Navigation() {
                         )}
                     </div>
                     <div className="flex items-center gap-4">
-                        <WalletMultiButton className="!bg-blue-600 !text-white !rounded-lg !px-4 !py-2 !font-semibold hover:!bg-blue-700 transition-all" />
+                        <WalletMultiButton className="!bg-[#00ff9f] !text-[#0f0f0f] !rounded-lg !px-4 !py-2 !font-semibold hover:!bg-[#00cc7f] transition-all !font-mono" />
                     </div>
                 </div>
             </div>
         </nav>
     )
 }
-

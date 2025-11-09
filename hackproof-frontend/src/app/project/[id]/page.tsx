@@ -6,6 +6,7 @@ import { useWallet, useConnection, useAnchorWallet } from '@solana/wallet-adapte
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { QRCodeSVG } from 'qrcode.react'
+import { AlertTriangle, Link2, XCircle } from 'lucide-react'
 
 export default function ProjectPage() {
     const params = useParams()
@@ -182,30 +183,32 @@ export default function ProjectPage() {
                             </div>
 
                             {!isRegistered && (
-                                <div className="bg-yellow-600/10 border border-yellow-600/20 rounded-lg p-4">
-                                    <p className="text-sm text-yellow-600">
-                                        ⚠️ You must register as a participant before voting. <Link href="/register" className="underline font-semibold">Register here</Link>
+                                <div className="bg-[#00ff9f]/10 border border-[#00ff9f]/30 rounded-lg p-4 flex items-start gap-3">
+                                    <AlertTriangle className="w-5 h-5 text-[#00ff9f] flex-shrink-0 mt-0.5" />
+                                    <p className="text-sm text-[#00ff9f] font-mono">
+                                        You must register as a participant before voting. <Link href="/register" className="underline font-semibold hover:text-[#00cc7f]">Register here</Link>
                                     </p>
                                 </div>
                             )}
 
                             {project && publicKey && project.owner.toLowerCase() === publicKey.toString().toLowerCase() && (
-                                <div className="bg-red-600/10 border border-red-600/20 rounded-lg p-4">
-                                    <p className="text-sm text-red-600">
-                                        🚫 You cannot vote for your own project!
+                                <div className="bg-[#00ff9f]/10 border border-[#00ff9f]/30 rounded-lg p-4 flex items-start gap-3">
+                                    <XCircle className="w-5 h-5 text-[#00ff9f] flex-shrink-0 mt-0.5" />
+                                    <p className="text-sm text-[#00ff9f] font-mono">
+                                        You cannot vote for your own project!
                                     </p>
                                 </div>
                             )}
 
                             {voteError && (
-                                <div className="bg-red-600/10 border border-red-600/20 rounded-lg p-4">
-                                    <p className="text-sm text-red-600">{voteError}</p>
+                                <div className="bg-[#00ff9f]/10 border border-[#00ff9f]/30 rounded-lg p-4">
+                                    <p className="text-sm text-[#00ff9f] font-mono">{voteError}</p>
                                 </div>
                             )}
 
-                            <div className="bg-blue-600/10 border border-blue-600/20 rounded-lg p-4 mb-4">
-                                <div className="text-sm text-foreground/70 mb-1">Your Voting Tokens</div>
-                                <div className="text-2xl font-bold text-blue-600">{votingTokens} $HACK</div>
+                            <div className="bg-[#00ff9f]/10 border border-[#00ff9f]/30 rounded-lg p-4 mb-4">
+                                <div className="text-sm text-[#00ff9f]/80 mb-1 font-mono">Your Voting Tokens</div>
+                                <div className="text-2xl font-bold text-[#00ff9f] font-mono">{votingTokens} $HACK</div>
                             </div>
 
                             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">

@@ -5,6 +5,7 @@ import { useProjects } from '@/contexts/ProjectsContext'
 import { useParticipant } from '@/contexts/ParticipantContext'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { AlertTriangle, Rocket, Loader2, XCircle } from 'lucide-react'
 
 export default function SubmitProjectPage() {
     const { connected, publicKey } = useWallet()
@@ -173,24 +174,28 @@ export default function SubmitProjectPage() {
 
                 <div className="bg-background/80 backdrop-blur-sm border border-foreground/10 rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-12 shadow-xl">
                     {!isRegistered && connected && (
-                        <div className="bg-yellow-600/10 border border-yellow-600/20 rounded-lg p-4 mb-6">
-                            <p className="text-sm text-yellow-600">
-                                ⚠️ You must register as a participant before submitting a project. <Link href="/register" className="underline font-semibold">Register here</Link>
+                        <div className="bg-[#00ff9f]/10 border border-[#00ff9f]/30 rounded-lg p-4 mb-6 flex items-start gap-3">
+                            <AlertTriangle className="w-5 h-5 text-[#00ff9f] flex-shrink-0 mt-0.5" />
+                            <p className="text-sm text-[#00ff9f] font-mono">
+                                You must register as a participant before submitting a project. <Link href="/register" className="underline font-semibold hover:text-[#00cc7f]">Register here</Link>
                             </p>
                         </div>
                     )}
 
                     {hasExistingProject && existingProject && (
-                        <div className="bg-red-600/10 border border-red-600/20 rounded-lg p-6 mb-6">
-                            <p className="text-sm text-red-600 font-semibold mb-2">
-                                🚫 You have already submitted a project!
-                            </p>
-                            <p className="text-sm text-red-600 mb-3">
+                        <div className="bg-[#00ff9f]/10 border border-[#00ff9f]/30 rounded-lg p-6 mb-6">
+                            <div className="flex items-start gap-3 mb-2">
+                                <XCircle className="w-5 h-5 text-[#00ff9f] flex-shrink-0 mt-0.5" />
+                                <p className="text-sm text-[#00ff9f] font-semibold font-mono">
+                                    You have already submitted a project!
+                                </p>
+                            </div>
+                            <p className="text-sm text-[#00ff9f]/80 mb-3 font-mono ml-8">
                                 Each wallet can only submit one project. You cannot submit another project.
                             </p>
                             <Link
                                 href={`/project/${existingProject.id}`}
-                                className="inline-block text-sm text-red-600 underline font-semibold hover:text-red-700"
+                                className="inline-block text-sm text-[#00ff9f] underline font-semibold hover:text-[#00cc7f] font-mono ml-8"
                             >
                                 View your existing project: {existingProject.cachedMetadata?.name || 'Your Project'} →
                             </Link>
@@ -226,8 +231,9 @@ export default function SubmitProjectPage() {
                                 <p className="mt-1 text-sm text-red-600">{nameError}</p>
                             )}
                             {isNameTaken && !nameError && (
-                                <p className="mt-1 text-sm text-red-600">
-                                    ⚠️ A project with this name already exists. Please choose a different name.
+                                <p className="mt-1 text-sm text-[#00ff9f] flex items-center gap-2 font-mono">
+                                    <AlertTriangle className="w-4 h-4" />
+                                    A project with this name already exists. Please choose a different name.
                                 </p>
                             )}
                         </div>
@@ -282,16 +288,16 @@ export default function SubmitProjectPage() {
                             <button
                                 type="submit"
                                 disabled={isSubmitting || !formData.name || !formData.description || hasExistingProject || isNameTaken}
-                                className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold shadow-xl hover:shadow-2xl hover:from-blue-500 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-xl flex items-center justify-center gap-2 border border-blue-500/50"
+                                className="w-full px-8 py-4 bg-gradient-to-r from-[#00ff9f] to-[#00cc7f] text-[#0f0f0f] rounded-xl font-semibold shadow-xl hover:shadow-[0_0_30px_rgba(0,255,159,0.5)] hover:from-[#00cc7f] hover:to-[#00ff9f] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-xl flex items-center justify-center gap-2 border border-[#00ff9f]/50 font-mono"
                             >
                                 {isSubmitting ? (
                                     <>
-                                        <span className="animate-spin">⏳</span>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
                                         <span>Submitting...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span>🚀</span>
+                                        <Rocket className="w-5 h-5" />
                                         <span>Submit Project</span>
                                     </>
                                 )}

@@ -9,6 +9,7 @@ import { PublicKey, SystemProgram, Keypair, SYSVAR_INSTRUCTIONS_PUBKEY, SYSVAR_R
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from '@solana/spl-token'
 import { HACKPROOF_IDL } from '@/idl/hackproof'
 import { HACKPROOF_PROGRAM_ID } from '@/contexts/WalletContext'
+import { CheckCircle2, Sparkles, Loader2 } from 'lucide-react'
 
 // Metaplex Token Metadata Program ID
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s')
@@ -289,7 +290,9 @@ export default function RegisterPage() {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center px-4">
                 <div className="max-w-md w-full bg-background/50 backdrop-blur-sm border border-foreground/10 rounded-2xl p-8 shadow-xl text-center space-y-6">
-                    <div className="text-6xl mb-4">✅</div>
+                    <div className="mb-4 flex justify-center">
+                        <CheckCircle2 className="w-16 h-16 text-[#00ff9f]" />
+                    </div>
                     <h1 className="text-3xl font-bold">Already Registered!</h1>
                     <p className="text-foreground/70">
                         Your wallet is already registered as a participant.
@@ -446,16 +449,16 @@ export default function RegisterPage() {
                                 type="submit"
                                 onClick={handleMintNFT}
                                 disabled={isMinting || !formData.name || !formData.project || !formData.description}
-                                className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold shadow-xl hover:shadow-2xl hover:from-blue-500 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-xl flex items-center justify-center gap-2 border border-blue-500/50"
+                                className="w-full px-8 py-4 bg-gradient-to-r from-[#00ff9f] to-[#00cc7f] text-[#0f0f0f] rounded-xl font-semibold shadow-xl hover:shadow-[0_0_30px_rgba(0,255,159,0.5)] hover:from-[#00cc7f] hover:to-[#00ff9f] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-xl flex items-center justify-center gap-2 border border-[#00ff9f]/50 font-mono"
                             >
                                 {isMinting ? (
                                     <>
-                                        <span className="animate-spin">⏳</span>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
                                         <span>{uploadProgress || 'Minting NFT...'}</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span>🎨</span>
+                                        <Sparkles className="w-5 h-5" />
                                         <span>Mint Participant NFT</span>
                                     </>
                                 )}
