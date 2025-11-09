@@ -44,7 +44,7 @@ export default function RegisterPage() {
     const { connected, publicKey } = useWallet()
     const { connection } = useConnection()
     const wallet = useAnchorWallet()
-    const { isRegistered, participant, registerParticipant } = useParticipant()
+    const { isRegistered, participant, registerParticipant, loadParticipantData } = useParticipant()
     const [formData, setFormData] = useState({
         name: '',
         bio: '',
@@ -260,7 +260,8 @@ export default function RegisterPage() {
             
             // Step 6: Register participant locally with wallet address -> IPFS CID mapping
             await registerParticipant(metadataCid, formData.name)
-            
+            // Refresh participant state and token balance after registration
+            await loadParticipantData()
             setUploadProgress('Complete!')
             setMintSuccess(true)
             
