@@ -44,7 +44,7 @@ export default function RegisterPage() {
     const { connected, publicKey } = useWallet()
     const { connection } = useConnection()
     const wallet = useAnchorWallet()
-    const { isRegistered, participant, registerParticipant, loadParticipantData } = useParticipant()
+    const { isRegistered, participant, registerParticipant, loadParticipantData, cleanupParticipant } = useParticipant()
     const [formData, setFormData] = useState({
         name: '',
         bio: '',
@@ -368,13 +368,28 @@ export default function RegisterPage() {
                             )}
                         </div>
                     )}
-                    <div className="pt-4 space-y-3">
+                                        <div className="pt-4 space-y-3">
                         <Link
                             href="/"
                             className="inline-block w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
                         >
                             Go to Home
                         </Link>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (!confirm('This will remove your local registration and optionally unpin metadata from Pinata. Continue?')) return
+                                                        try {
+                                                            await cleanupParticipant({ unpin: true })
+                                                            alert('Participant cleaned. Reloading to allow fresh registration.')
+                                                            window.location.reload()
+                                                        } catch (e:any) {
+                                                            alert('Cleanup failed: ' + (e.message || String(e)))
+                                                        }
+                                                    }}
+                                                    className="inline-block w-full px-6 py-3 bg-red-600/80 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                                                >
+                                                    Cleanup & Re-register
+                                                </button>
                         {participant.metadataCid && (
                             <a
                                 href={`https://gateway.pinata.cloud/ipfs/${participant.metadataCid}`}
