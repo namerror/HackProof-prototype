@@ -223,13 +223,13 @@ export default function Home() {
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <Link
                     href="/register"
-                    className="inline-block px-8 py-4 bg-gradient-to-r from-[#00ff9f] to-[#00cc7f] text-[#0f0f0f] rounded-xl font-semibold shadow-xl hover:shadow-[0_0_30px_rgba(0,255,159,0.5)] transition-all hover:scale-105 active:scale-95 border border-[#00ff9f]/50 font-mono"
+                    className="inline-block px-8 py-4 bg-gradient-to-r from-[#00ff9f] to-[#00cc7f] text-[#0f0f0f] rounded-xl font-semibold shadow-xl hover:shadow-[0_0_30px_rgba(0,255,159,0.5)] transition-all hover:scale-105 active:scale-95 border border-[#00ff9f]/50 font-mono flex items-center justify-center"
                   >
                     Register for Hackathon →
                   </Link>
                   <Link
                     href="/projects"
-                    className="inline-block px-8 py-4 bg-[#1a1a1a]/50 backdrop-blur-sm text-[#00ff9f] rounded-xl font-semibold shadow-xl hover:shadow-[0_0_20px_rgba(0,255,159,0.3)] hover:bg-[#1a1a1a]/70 transition-all hover:scale-105 active:scale-95 border border-[#00ff9f]/20 font-mono"
+                    className="inline-block px-8 py-4 bg-[#1a1a1a]/50 backdrop-blur-sm text-[#00ff9f] rounded-xl font-semibold shadow-xl hover:shadow-[0_0_20px_rgba(0,255,159,0.3)] hover:bg-[#1a1a1a]/70 transition-all hover:scale-105 active:scale-95 border border-[#00ff9f]/20 font-mono flex items-center justify-center"
                   >
                     View Projects
                   </Link>
