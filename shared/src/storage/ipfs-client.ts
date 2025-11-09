@@ -13,6 +13,7 @@ declare function fetch(input: any, init?: any): Promise<any>;
 
 // Get token from environment - works in both Node.js and browser (Next.js)
 function getPinataToken(): string {
+  console.log('NEXT_PUBLIC_PINATA_JWT:', process.env.NEXT_PUBLIC_PINATA_JWT)
   const anyProc: any = typeof process !== 'undefined' ? process : {}
   // Browser path (Next.js client side)
   if (typeof window !== 'undefined') {
