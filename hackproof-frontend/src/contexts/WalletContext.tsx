@@ -57,11 +57,8 @@ export function WalletContextProvider({ children }: { children: React.ReactNode 
     setMounted(true);
   }, []);
 
-  // Prevent hydration mismatch
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
+  // Always render providers to avoid context errors
+  // The mounted check was causing ParticipantProvider to fail
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect={false}>

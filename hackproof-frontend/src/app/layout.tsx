@@ -4,6 +4,7 @@ import "./globals.css";
 import '@solana/wallet-adapter-react-ui/styles.css';
 import { WalletContextProvider } from '@/contexts/WalletContext'
 import { ProjectsProvider } from '@/contexts/ProjectsContext'
+import { ParticipantProvider } from '@/contexts/ParticipantContext'
 import Navigation from '@/components/Navigation'
 import HackerBackground from '@/components/HackerBackground'
 
@@ -32,10 +33,12 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <HackerBackground />
         <WalletContextProvider>
-          <ProjectsProvider>
-            <Navigation />
-            {children}
-          </ProjectsProvider>
+          <ParticipantProvider>
+            <ProjectsProvider>
+              <Navigation />
+              {children}
+            </ProjectsProvider>
+          </ParticipantProvider>
         </WalletContextProvider>
       </body>
     </html>

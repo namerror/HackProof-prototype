@@ -54,6 +54,11 @@
           "signer": true
         },
         {
+          "name": "metadata",
+          "writable": true,
+          "signer": false
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
@@ -112,3 +117,4 @@
     }
   ]
 }
+

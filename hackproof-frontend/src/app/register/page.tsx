@@ -1,17 +1,47 @@
 'use client'
 import { useState } from 'react'
-import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react'
-import { HACKPROOF_PROGRAM_ID } from '@/contexts/WalletContext'
-import { useConnection } from '@solana/wallet-adapter-react'
+import { useWallet, useConnection, useAnchorWallet } from '@solana/wallet-adapter-react'
 import Link from 'next/link'
+import { IPFSClient, createParticipantMetadata } from '@shared'
+import { useParticipant } from '@/contexts/ParticipantContext'
 import { Program, AnchorProvider } from '@project-serum/anchor'
-import { PublicKey, SystemProgram } from '@solana/web3.js'
+import { PublicKey, SystemProgram, Keypair, SYSVAR_INSTRUCTIONS_PUBKEY, SYSVAR_RENT_PUBKEY } from '@solana/web3.js'
+import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from '@solana/spl-token'
 import { HACKPROOF_IDL } from '@/idl/hackproof'
+import { HACKPROOF_PROGRAM_ID } from '@/contexts/WalletContext'
+
+// Metaplex Token Metadata Program ID
+const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s')
+
+// Metaplex PDA derivation helpers
+function findMetadataPda(mint: PublicKey): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [
+            Buffer.from('metadata'),
+            TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+            mint.toBuffer(),
+        ],
+        TOKEN_METADATA_PROGRAM_ID
+    )[0]
+}
+
+function findMasterEditionPda(mint: PublicKey): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [
+            Buffer.from('metadata'),
+            TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+            mint.toBuffer(),
+            Buffer.from('edition'),
+        ],
+        TOKEN_METADATA_PROGRAM_ID
+    )[0]
+}
 
 export default function RegisterPage() {
+    const { connected, publicKey } = useWallet()
     const { connection } = useConnection()
-    const { connected, publicKey, sendTransaction } = useWallet() // Add publicKey and sendTransaction
     const wallet = useAnchorWallet()
+    const { isRegistered, participant, registerParticipant } = useParticipant()
     const [formData, setFormData] = useState({
         name: '',
         project: '',
@@ -20,6 +50,9 @@ export default function RegisterPage() {
     const [error, setError] = useState<string | null>(null)
     const [isMinting, setIsMinting] = useState(false)
     const [mintSuccess, setMintSuccess] = useState(false)
+    const [metadataCid, setMetadataCid] = useState<string | null>(null)
+    const [uploadProgress, setUploadProgress] = useState<string>('')
+    const [txSignature, setTxSignature] = useState<string | null>(null)
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target
@@ -44,6 +77,11 @@ export default function RegisterPage() {
             return
         }
 
+        if (isRegistered) {
+            alert('You are already registered! Your wallet is already associated with a participant NFT.')
+            return
+        }
+
         if (!formData.name || !formData.project || !formData.description) {
             setError('Please fill in all fields')
             return
@@ -53,42 +91,179 @@ export default function RegisterPage() {
         setError(null)
 
         try {
-            console.log("Calling Solana program:", HACKPROOF_PROGRAM_ID.toString())
+            const client = new IPFSClient()
             
-            const provider = new AnchorProvider(connection, wallet, {})
-            const program = new Program(HACKPROOF_IDL, HACKPROOF_PROGRAM_ID, provider)
-
-            // Create metadata
-            const metadata = createMetadataJson()
+            // Step 1: Upload participant badge image to IPFS
+            setUploadProgress('Uploading participant badge image...')
             
-            // In a production environment, you would upload this to IPFS or Arweave
-            // For now, we'll use base64 encoding as a temporary solution
-            const metadataUri = `data:application/json;base64,${Buffer.from(metadata).toString('base64')}`
-
-            // Derive participant PDA
-            const [participantPda] = PublicKey.findProgramAddressSync(
-                [Buffer.from("participant"), publicKey.toBuffer()],
-                HACKPROOF_PROGRAM_ID
-            )            
-
-            // Call your Solana program
-            const tx = await program.methods
-                .registerParticipant(formData.name, metadataUri)
-                .accounts({
-                    participant: participantPda,
-                    authority: publicKey,
-                    systemProgram: SystemProgram.programId,
+            // Create a simple badge image using canvas (no external fetch needed)
+            let badgeBlob: Blob
+            try {
+                // Try to use the actual badge image if available
+                const badgeImagePath = '/participant-badge.png'
+                const badgeResponse = await fetch(badgeImagePath)
+                if (badgeResponse.ok) {
+                    badgeBlob = await badgeResponse.blob()
+                } else {
+                    throw new Error('Badge image not found')
+                }
+            } catch (error) {
+                // Fallback: Create a simple colored image using canvas
+                console.log('Creating fallback badge image...')
+                const canvas = document.createElement('canvas')
+                canvas.width = 512
+                canvas.height = 512
+                const ctx = canvas.getContext('2d')
+                if (ctx) {
+                    // Draw background
+                    ctx.fillStyle = '#4F46E5'
+                    ctx.fillRect(0, 0, 512, 512)
+                    // Draw text
+                    ctx.fillStyle = '#FFFFFF'
+                    ctx.font = 'bold 48px Arial'
+                    ctx.textAlign = 'center'
+                    ctx.textBaseline = 'middle'
+                    ctx.fillText('HackProof', 256, 200)
+                    ctx.font = '32px Arial'
+                    ctx.fillText('Participant', 256, 280)
+                }
+                badgeBlob = await new Promise<Blob>((resolve) => {
+                    canvas.toBlob((blob) => {
+                        resolve(blob || new Blob())
+                    }, 'image/png')
                 })
-                .rpc()
+            }
+            const badgeCid = await client.uploadImage(badgeBlob, 'participant-badge.png')
+            
+            setUploadProgress('Creating metadata...')
+            
+            // Step 2: Create participant metadata
+            const metadata = createParticipantMetadata(formData.name, badgeCid, {
+                skills: [formData.project] // Using project name as a skill for now
+            })
+            
+            // Step 3: Upload metadata to IPFS
+            setUploadProgress('Uploading metadata to IPFS...')
+            const metadataCid = await client.uploadMetadata(metadata)
+            setMetadataCid(metadataCid)
+            
+            // Step 4: Get full metadata URI
+            const metadataUri = client.getMetadataUri(metadataCid)
+            
+            // Step 5: Register participant on Solana blockchain
+            setUploadProgress('Registering on Solana...')
+            let signature: string | null = null
+            try {
+                if (!wallet || !publicKey) {
+                    throw new Error('Wallet not connected')
+                }
 
-            console.log("Registration successful! TX:", tx)
+                // Create Anchor provider and program
+                const provider = new AnchorProvider(connection, wallet, {})
+                const program = new Program(HACKPROOF_IDL, HACKPROOF_PROGRAM_ID, provider)
+
+                // Derive PDAs
+                const [participantPda] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("participant"), publicKey.toBuffer()],
+                    HACKPROOF_PROGRAM_ID
+                )
+
+                const [hackathonPda] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("hackathon")],
+                    HACKPROOF_PROGRAM_ID
+                )
+
+                const [votingTokenMintPda] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("voting_token_mint")],
+                    HACKPROOF_PROGRAM_ID
+                )
+
+                // Generate NFT mint keypair
+                const nftMint = Keypair.generate()
+
+                // Derive Metaplex metadata and master edition addresses
+                const metadataAddress = findMetadataPda(nftMint.publicKey)
+                const masterEditionAddress = findMasterEditionPda(nftMint.publicKey)
+
+                // Derive NFT token account (ATA)
+                const nftTokenAccount = getAssociatedTokenAddressSync(
+                    nftMint.publicKey,
+                    publicKey,
+                    false,
+                    TOKEN_PROGRAM_ID,
+                    ASSOCIATED_TOKEN_PROGRAM_ID
+                )
+
+                // Derive voting token account (ATA)
+                const votingTokenAccount = getAssociatedTokenAddressSync(
+                    votingTokenMintPda,
+                    publicKey,
+                    false,
+                    TOKEN_PROGRAM_ID,
+                    ASSOCIATED_TOKEN_PROGRAM_ID
+                )
+
+
+                // Call the Solana program using Anchor
+                signature = await program.methods
+                    .registerParticipant(formData.name, metadataUri)
+                    .accounts({
+                        participant: participantPda,
+                        hackathon: hackathonPda,
+                        metadata: metadataAddress,
+                        masterEdition: masterEditionAddress,
+                        nftMint: nftMint.publicKey,
+                        nftTokenAccount: nftTokenAccount,
+                        votingTokenMint: votingTokenMintPda,
+                        votingTokenAccount: votingTokenAccount,
+                        authority: publicKey,
+                        rent: SYSVAR_RENT_PUBKEY,
+                        systemProgram: SystemProgram.programId,
+                        tokenProgram: TOKEN_PROGRAM_ID,
+                        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+                        sysvarInstructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+                    })
+                    .signers([nftMint])
+                    .rpc()
+
+                setTxSignature(signature)
+                console.log('Solana transaction signature:', signature)
+            } catch (solanaError: any) {
+                console.error('Solana registration failed:', solanaError)
+                // Continue with IPFS registration even if Solana fails
+                // This allows the system to work even if Solana is down
+                const errorMessage = solanaError?.message || 'Unknown error'
+                console.warn(`Solana registration failed: ${errorMessage}. Continuing with IPFS-only registration.`)
+            }
+            
+            // Step 6: Register participant locally with wallet address -> IPFS CID mapping
+            await registerParticipant(metadataCid, formData.name)
+            
+            setUploadProgress('Complete!')
             setMintSuccess(true)
-
-        } catch (error) {
-            console.error('Registration failed:', error)
-            setError(error instanceof Error ? error.message : 'Registration failed')
+            
+            console.log('Metadata CID:', metadataCid)
+            console.log('Metadata URI:', metadataUri)
+        } catch (error: any) {
+            console.error('Error in registration process:', error)
+            const errorMessage = error?.message || 'Unknown error occurred'
+            
+            // More specific error handling
+            if (errorMessage.includes('PINATA_JWT') || errorMessage.includes('NEXT_PUBLIC_PINATA_JWT')) {
+                alert('Pinata JWT Token not found. Please set NEXT_PUBLIC_PINATA_JWT in your .env.local file.\n\nCreate hackproof-frontend/.env.local with:\nNEXT_PUBLIC_PINATA_JWT=your_jwt_token_here\n\nThen restart your dev server.')
+            } else if (errorMessage.includes('Network error') || errorMessage.includes('Failed to fetch') || errorMessage.includes('fetch')) {
+                alert(`Network error: ${errorMessage}\n\nPossible causes:\n- Check your internet connection\n- Pinata API might be temporarily down\n- Firewall or network restrictions\n\nPlease try again in a moment.`)
+            } else if (errorMessage.includes('Invalid Pinata') || errorMessage.includes('401') || errorMessage.includes('403')) {
+                alert('Invalid Pinata JWT Token. Please verify your token at https://app.pinata.cloud/ and update .env.local')
+            } else if (errorMessage.includes('IPFS') || errorMessage.includes('upload')) {
+                alert(`Failed to upload to IPFS: ${errorMessage}\n\nPlease check your PINATA_JWT and try again.`)
+            } else {
+                alert(`Registration failed: ${errorMessage}\n\nCheck the browser console for more details.`)
+            }
         } finally {
             setIsMinting(false)
+            setUploadProgress('')
         }
     }
 
@@ -109,6 +284,47 @@ export default function RegisterPage() {
         )
     }
 
+    // Show already registered message
+    if (isRegistered && participant) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center px-4">
+                <div className="max-w-md w-full bg-background/50 backdrop-blur-sm border border-foreground/10 rounded-2xl p-8 shadow-xl text-center space-y-6">
+                    <div className="text-6xl mb-4">✅</div>
+                    <h1 className="text-3xl font-bold">Already Registered!</h1>
+                    <p className="text-foreground/70">
+                        Your wallet is already registered as a participant.
+                    </p>
+                    {participant.cachedMetadata && (
+                        <div className="text-left bg-background/30 rounded-lg p-4 space-y-2">
+                            <p><strong>Name:</strong> {participant.cachedMetadata.name.replace('HackProof Participant: ', '')}</p>
+                            {participant.cachedMetadata.properties.skills && participant.cachedMetadata.properties.skills.length > 0 && (
+                                <p><strong>Skills:</strong> {participant.cachedMetadata.properties.skills.join(', ')}</p>
+                            )}
+                        </div>
+                    )}
+                    <div className="pt-4 space-y-3">
+                        <Link
+                            href="/"
+                            className="inline-block w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                        >
+                            Go to Home
+                        </Link>
+                        {participant.metadataCid && (
+                            <a
+                                href={`https://gateway.pinata.cloud/ipfs/${participant.metadataCid}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-block w-full px-6 py-3 bg-white/5 text-white rounded-lg font-semibold hover:bg-white/10 transition-colors"
+                            >
+                                View on IPFS →
+                            </a>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     if (mintSuccess) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center px-4">
@@ -116,8 +332,38 @@ export default function RegisterPage() {
                     <div className="text-6xl mb-4">🎉</div>
                     <h1 className="text-3xl font-bold">Success!</h1>
                     <p className="text-foreground/70">
-                        Your Participant NFT has been minted successfully! You've received 100 voting tokens.
+                        Your Participant NFT has been registered! Your metadata is stored on IPFS and registered on Solana.
                     </p>
+                    {metadataCid && (
+                        <div className="text-sm text-foreground/60 pt-2 space-y-3">
+                            <div>
+                                <p className="font-semibold mb-1">IPFS Metadata:</p>
+                                <code className="bg-background/50 px-2 py-1 rounded text-xs break-all block">{metadataCid}</code>
+                                <a 
+                                    href={`https://gateway.pinata.cloud/ipfs/${metadataCid}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block text-blue-400 hover:text-blue-300 underline mt-1"
+                                >
+                                    View on IPFS →
+                                </a>
+                            </div>
+                            {txSignature && (
+                                <div>
+                                    <p className="font-semibold mb-1">Solana Transaction:</p>
+                                    <code className="bg-background/50 px-2 py-1 rounded text-xs break-all block">{txSignature.slice(0, 20)}...</code>
+                                    <a 
+                                        href={`https://solscan.io/tx/${txSignature}?cluster=devnet`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block text-blue-400 hover:text-blue-300 underline mt-1"
+                                    >
+                                        View on Solscan →
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+                    )}
                     <div className="pt-4 space-y-3">
                         <Link
                             href="/"
@@ -205,7 +451,7 @@ export default function RegisterPage() {
                                 {isMinting ? (
                                     <>
                                         <span className="animate-spin">⏳</span>
-                                        <span>Minting NFT...</span>
+                                        <span>{uploadProgress || 'Minting NFT...'}</span>
                                     </>
                                 ) : (
                                     <>

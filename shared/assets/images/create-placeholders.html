@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+function createImage() {
+  const canvas1 = document.createElement('canvas');
+  canvas1.width = 512;
+  canvas1.height = 512;
+  const ctx1 = canvas1.getContext('2d');
+  ctx1.fillStyle = '#4F46E5';
+  ctx1.fillRect(0, 0, 512, 512);
+  ctx1.fillStyle = 'white';
+  ctx1.font = 'bold 40px Arial';
+  ctx1.textAlign = 'center';
+  ctx1.fillText('HackProof', 256, 230);
+  ctx1.fillText('Participant', 256, 280);
+  
+  const canvas2 = document.createElement('canvas');
+  canvas2.width = 512;
+  canvas2.height = 512;
+  const ctx2 = canvas2.getContext('2d');
+  ctx2.fillStyle = '#10B981';
+  ctx2.fillRect(0, 0, 512, 512);
+  ctx2.fillStyle = 'white';
+  ctx2.font = 'bold 40px Arial';
+  ctx2.textAlign = 'center';
+  ctx2.fillText('HackProof', 256, 230);
+  ctx2.fillText('Project', 256, 280);
+  
+  canvas1.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'participant-badge.png';
+    a.click();
+  });
+  
+  canvas2.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'project-placeholder.png';
+    a.click();
+  });
+}
+</script>
+</head>
+<body onload="createImage()">
+</body>
+</html>

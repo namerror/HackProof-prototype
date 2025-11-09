@@ -1,5 +1,5 @@
 'use client'
-import { useProjects } from '@/contexts/ProjectsContext'
+import { useProjects, getProjectDisplayData } from '@/contexts/ProjectsContext'
 import { useWallet } from '@solana/wallet-adapter-react'
 import Link from 'next/link'
 
@@ -18,7 +18,7 @@ export default function ProjectsGalleryPage() {
                     <div className="flex gap-3">
                         <Link
                             href="/leaderboard"
-                            className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-xl font-semibold hover:from-yellow-500 hover:to-yellow-600 transition-all shadow-xl hover:shadow-2xl border border-yellow-500/50 hover:scale-105"
+                            className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-xl font-semibold hover:from-yellow-500 hover:to-yellow-600 transition-all shadow-xl hover:shadow-2xl border border-yellow-500/50 hover:scale-105 flex items-center justify-center"
                         >
                             🏆 Leaderboard
                         </Link>
@@ -51,50 +51,53 @@ export default function ProjectsGalleryPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {projects.map((project) => (
-                            <Link
-                                key={project.id}
-                                href={`/project/${project.id}`}
-                                className="bg-background/80 backdrop-blur-sm border border-white/10 rounded-xl p-6 shadow-xl hover:shadow-2xl transition-all hover:scale-105 group hover:border-blue-500/30"
-                            >
-                                <div className="space-y-4">
-                                    <div>
-                                        <h3 className="text-xl font-bold mb-2 group-hover:text-blue-600 transition-colors">
-                                            {project.name}
-                                        </h3>
-                                        <p className="text-foreground/70 text-sm line-clamp-3">
-                                            {project.description}
-                                        </p>
-                                    </div>
-
-                                    {project.githubLink && (
-                                        <a
-                                            href={project.githubLink}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="text-blue-600 hover:underline text-sm flex items-center gap-1"
-                                        >
-                                            🔗 GitHub
-                                        </a>
-                                    )}
-
-                                    <div className="flex items-center justify-between pt-2 border-t border-foreground/10">
+                        {projects.map((project) => {
+                            const displayData = getProjectDisplayData(project)
+                            return (
+                                <Link
+                                    key={project.id}
+                                    href={`/project/${project.id}`}
+                                    className="bg-background/80 backdrop-blur-sm border border-white/10 rounded-xl p-6 shadow-xl hover:shadow-2xl transition-all hover:scale-105 group hover:border-blue-500/30"
+                                >
+                                    <div className="space-y-4">
                                         <div>
-                                            <div className="text-2xl font-bold text-blue-600">{project.votes}</div>
-                                            <div className="text-xs text-foreground/60">
-                                                {project.votes === 1 ? 'vote' : 'votes'}
-                                            </div>
+                                            <h3 className="text-xl font-bold mb-2 group-hover:text-blue-600 transition-colors">
+                                                {displayData.name}
+                                            </h3>
+                                            <p className="text-foreground/70 text-sm line-clamp-3">
+                                                {displayData.description}
+                                            </p>
                                         </div>
-                                        {project.teamMembers.length > 0 && (
-                                            <div className="text-xs text-foreground/60">
-                                                {project.teamMembers.length} {project.teamMembers.length === 1 ? 'member' : 'members'}
-                                            </div>
+
+                                        {displayData.githubLink && (
+                                            <a
+                                                href={displayData.githubLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="text-blue-600 hover:underline text-sm flex items-center gap-1"
+                                            >
+                                                🔗 GitHub
+                                            </a>
                                         )}
+
+                                        <div className="flex items-center justify-between pt-2 border-t border-foreground/10">
+                                            <div>
+                                                <div className="text-2xl font-bold text-blue-600">{displayData.votes}</div>
+                                                <div className="text-xs text-foreground/60">
+                                                    {displayData.votes === 1 ? 'vote' : 'votes'}
+                                                </div>
+                                            </div>
+                                            {displayData.teamMembers.length > 0 && (
+                                                <div className="text-xs text-foreground/60">
+                                                    {displayData.teamMembers.length} {displayData.teamMembers.length === 1 ? 'member' : 'members'}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            </Link>
-                        ))}
+                                </Link>
+                            )
+                        })}
                     </div>
                 )}
             </div>

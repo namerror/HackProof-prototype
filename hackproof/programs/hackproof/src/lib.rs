@@ -37,13 +37,12 @@ pub mod hackproof {
     }
 
     // ========== PARTICIPANT FUNCTIONS ==========
-    
+
     pub fn register_participant(
         ctx: Context<RegisterParticipant>,
         name: String,
         metadata_uri: String,
     ) -> Result<()> {
-        // ... (Participant account initialization logic remains the same)
         let participant = &mut ctx.accounts.participant;
         participant.name = name.clone();
         participant.authority = ctx.accounts.authority.key();
@@ -54,7 +53,7 @@ pub mod hackproof {
         participant.bump = ctx.bumps.participant;
         participant.project = None;
 
-        // ... (NFT CPI logic remains the same)
+        // Create NFT using Metaplex Token Metadata V1
         CreateV1CpiBuilder::new(&ctx.accounts.token_metadata_program.to_account_info())
             .metadata(&ctx.accounts.metadata.to_account_info())
             .master_edition(Some(&ctx.accounts.master_edition.to_account_info()))
@@ -89,7 +88,7 @@ pub mod hackproof {
         // Mint voting tokens to participant (INITIAL_VOTING_TOKENS)
         let hackathon_seeds: &[&[u8]] = &[
             b"hackathon",
-            &[ctx.accounts.hackathon.bump], // Correctly pass bump as the last element of the seeds slice
+            &[ctx.accounts.hackathon.bump],
         ];
         let signer_seeds = &[&hackathon_seeds[..]];
 
@@ -99,9 +98,9 @@ pub mod hackproof {
                 MintTo {
                     mint: ctx.accounts.voting_token_mint.to_account_info(),
                     to: ctx.accounts.voting_token_account.to_account_info(),
-                    authority: ctx.accounts.hackathon.to_account_info(), // Hackathon PDA is the mint authority
+                    authority: ctx.accounts.hackathon.to_account_info(),
                 },
-                signer_seeds // Corrected signer
+                signer_seeds
             ),
             INITIAL_VOTING_TOKENS
         )?;
@@ -132,7 +131,7 @@ pub mod hackproof {
         project.created_at = Clock::get()?.unix_timestamp;
         project.status = ProjectStatus::Active;
         project.submitted = false;
-        project.total_votes_received = 0; // Track total voting tokens received
+        project.total_votes_received = 0;
         project.bump = ctx.bumps.project;
 
         // Add creator as first team member
@@ -210,10 +209,9 @@ pub mod hackproof {
     // ========== TOKEN-BASED VOTING FUNCTIONS ==========
 
     pub fn vote_with_tokens<'info>(
-        ctx: Context<'_, '_, 'info, 'info, VoteWithTokens<'info>>, // Final, correct signature
+        ctx: Context<'_, '_, 'info, 'info, VoteWithTokens<'info>>,
         token_amount: u64,
     ) -> Result<()> {
-        // ... (Start of function remains the same)
         require!(token_amount > 0, ErrorCode::InvalidTokenAmount);
         
         let voter_participant = &mut ctx.accounts.voter_participant;
@@ -248,12 +246,12 @@ pub mod hackproof {
         // Update project vote count
         project.total_votes_received = project.total_votes_received
             .checked_add(token_amount)
-            .ok_or(ErrorCode::MathOverflow)?; // Safe addition
+            .ok_or(ErrorCode::MathOverflow)?;
 
         // Track voter's allocation
         voter_participant.voting_tokens_allocated = voter_participant.voting_tokens_allocated
             .checked_add(token_amount)
-            .ok_or(ErrorCode::MathOverflow)?; // Safe addition
+            .ok_or(ErrorCode::MathOverflow)?;
 
         // 🎁 BONUS FEATURE: If voter has a project, give their project 5% bonus
         if let Some(voter_project_key) = voter_participant.project {
@@ -267,17 +265,15 @@ pub mod hackproof {
                     let bonus_amount = token_amount
                         .checked_mul(5)
                         .and_then(|v| v.checked_div(100))
-                        .ok_or(ErrorCode::MathOverflow)?; // MathOverflow is now defined
+                        .ok_or(ErrorCode::MathOverflow)?;
                     
                     if bonus_amount > 0 {
                         // Get voter's project token account (must be in remaining_accounts[1])
                         if let Some(voter_project_token_account_info) = ctx.remaining_accounts.get(1) {
-                            // Mint bonus tokens to voter's project
-                            
                             // CORRECTED PDA SIGNER LOGIC
                             let hackathon_seeds: &[&[u8]] = &[
                                 b"hackathon",
-                                &[ctx.accounts.hackathon.bump], // Correctly structured seed slice
+                                &[ctx.accounts.hackathon.bump],
                             ];
                             let signer_seeds = &[&hackathon_seeds[..]];
 
@@ -293,14 +289,6 @@ pub mod hackproof {
                                 ),
                                 bonus_amount
                             )?;
-
-                            // Update the voter's project's total votes (This requires the project account to be mutable)
-                            // NOTE: Since Project account is passed via remaining_accounts and not in the main Context, 
-                            // you cannot directly mutate it via `voter_project.total_votes_received`. 
-                            // For a hackathon, let's keep the score calculation simpler on the frontend for now, 
-                            // or pass the project mutably through the Context which is cleaner.
-                            // Assuming this is fine for the hackathon timeline:
-                            // You are successfully minting the bonus tokens to the project's ATA.
                             
                             msg!("🎁 Bonus: Voter's project '{}' received {} $HCKPRF (5% of vote)", 
                                 voter_project.name, bonus_amount);
@@ -419,7 +407,7 @@ pub struct RegisterParticipant<'info> {
     
     #[account(mut)]
     pub authority: Signer<'info>,
-
+    
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
@@ -607,41 +595,41 @@ pub struct DisableVotingPhase<'info> {
 
 #[account]
 pub struct Participant {
-    pub authority: Pubkey,              // Wallet that registered
-    pub name: String,                   // Participant name (max 256 bytes)
-    pub metadata_uri: String,           // IPFS URI for NFT metadata (max 200 bytes)
-    pub registered_at: i64,             // Registration timestamp
-    pub nft_mint: Pubkey,               // NFT mint address
-    pub voting_tokens_allocated: u64,   // How many voting tokens they've spent
-    pub bump: u8,                       // PDA bump
-    pub project: Option<Pubkey>,        // Current project (if any)
+    pub authority: Pubkey,
+    pub name: String,
+    pub metadata_uri: String,
+    pub registered_at: i64,
+    pub nft_mint: Pubkey,
+    pub voting_tokens_allocated: u64,
+    pub bump: u8,
+    pub project: Option<Pubkey>,
 }
 
 #[account]
 pub struct Project {
-    pub name: String,                   // Project name (max 256 bytes)
-    pub description: String,            // Project description (max 500 bytes)
-    pub github_repo: String,            // GitHub repository URL (max 200 bytes)
-    pub creator: Pubkey,                // Project creator (team leader)
-    pub max_team_size: u8,              // Maximum team members
-    pub current_team_size: u8,          // Current number of members
-    pub created_at: i64,                // Creation timestamp
-    pub status: ProjectStatus,          // Project status
-    pub submitted: bool,                // Has been submitted
-    pub submitted_at: Option<i64>,      // Submission timestamp
-    pub bump: u8,                       // PDA bump
-    pub submission_uri: Option<String>, // IPFS link to final submission (max 200 bytes)
-    pub total_votes_received: u64,      // Total voting tokens received
+    pub name: String,
+    pub description: String,
+    pub github_repo: String,
+    pub creator: Pubkey,
+    pub max_team_size: u8,
+    pub current_team_size: u8,
+    pub created_at: i64,
+    pub status: ProjectStatus,
+    pub submitted: bool,
+    pub submitted_at: Option<i64>,
+    pub bump: u8,
+    pub submission_uri: Option<String>,
+    pub total_votes_received: u64,
 }
 
 #[account]
 pub struct Hackathon {
-    pub admin: Pubkey,                  // Admin who can control phases
-    pub voting_enabled: bool,           // Whether voting is currently enabled
-    pub voting_start: Option<i64>,      // When voting started
-    pub voting_end: Option<i64>,        // When voting ended
-    pub voting_token_mint: Pubkey,      // Mint for voting tokens
-    pub bump: u8,                       // PDA bump
+    pub admin: Pubkey,
+    pub voting_enabled: bool,
+    pub voting_start: Option<i64>,
+    pub voting_end: Option<i64>,
+    pub voting_token_mint: Pubkey,
+    pub bump: u8,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]

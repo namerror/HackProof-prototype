@@ -1,5 +1,5 @@
 'use client'
-import { useProjects } from '@/contexts/ProjectsContext'
+import { useProjects, getProjectDisplayData } from '@/contexts/ProjectsContext'
 import { useWallet } from '@solana/wallet-adapter-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
@@ -55,56 +55,59 @@ export default function LeaderboardPage() {
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        {topProjects.map((project, index) => (
-                            <Link
-                                key={project.id}
-                                href={`/project/${project.id}`}
-                                className={`block bg-gradient-to-r ${getRankColor(index)} border-2 rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-2xl hover:shadow-[0_0_40px_rgba(34,197,94,0.3)] transition-all hover:scale-[1.02] group`}
-                            >
-                                <div className="flex items-start justify-between gap-6">
-                                    <div className="flex items-start gap-6 flex-1">
-                                        <div className="text-5xl sm:text-6xl font-bold min-w-[80px] text-center">
-                                            {getRankEmoji(index)}
+                        {topProjects.map((project, index) => {
+                            const displayData = getProjectDisplayData(project)
+                            return (
+                                <Link
+                                    key={project.id}
+                                    href={`/project/${project.id}`}
+                                    className={`block bg-gradient-to-r ${getRankColor(index)} border-2 rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-2xl hover:shadow-[0_0_40px_rgba(34,197,94,0.3)] transition-all hover:scale-[1.02] group`}
+                                >
+                                    <div className="flex items-start justify-between gap-6">
+                                        <div className="flex items-start gap-6 flex-1">
+                                            <div className="text-5xl sm:text-6xl font-bold min-w-[80px] text-center">
+                                                {getRankEmoji(index)}
+                                            </div>
+                                            <div className="flex-1">
+                                                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 group-hover:text-green-400 transition-colors">
+                                                    {displayData.name}
+                                                </h2>
+                                                <p className="text-base sm:text-lg text-foreground/80 mb-4 leading-relaxed">
+                                                    {displayData.description}
+                                                </p>
+
+                                                {displayData.githubLink && (
+                                                    <a
+                                                        href={displayData.githubLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="text-green-400 hover:text-green-300 text-sm sm:text-base inline-flex items-center gap-2 mb-4"
+                                                    >
+                                                        🔗 GitHub
+                                                    </a>
+                                                )}
+
+                                                {displayData.teamMembers.length > 0 && (
+                                                    <div className="text-sm text-foreground/60">
+                                                        <span className="font-medium">Team:</span> {displayData.teamMembers.join(', ')}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="flex-1">
-                                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 group-hover:text-green-400 transition-colors">
-                                                {project.name}
-                                            </h2>
-                                            <p className="text-base sm:text-lg text-foreground/80 mb-4 leading-relaxed">
-                                                {project.description}
-                                            </p>
 
-                                            {project.githubLink && (
-                                                <a
-                                                    href={project.githubLink}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="text-green-400 hover:text-green-300 text-sm sm:text-base inline-flex items-center gap-2 mb-4"
-                                                >
-                                                    🔗 GitHub
-                                                </a>
-                                            )}
-
-                                            {project.teamMembers.length > 0 && (
-                                                <div className="text-sm text-foreground/60">
-                                                    <span className="font-medium">Team:</span> {project.teamMembers.join(', ')}
-                                                </div>
-                                            )}
+                                        <div className="text-center min-w-[120px]">
+                                            <div className="text-4xl sm:text-5xl md:text-6xl font-bold text-green-400 mb-1">
+                                                {displayData.votes}
+                                            </div>
+                                            <div className="text-sm sm:text-base text-foreground/60 font-medium">
+                                                $HACK {displayData.votes === 1 ? 'vote' : 'votes'}
+                                            </div>
                                         </div>
                                     </div>
-
-                                    <div className="text-center min-w-[120px]">
-                                        <div className="text-4xl sm:text-5xl md:text-6xl font-bold text-green-400 mb-1">
-                                            {project.votes}
-                                        </div>
-                                        <div className="text-sm sm:text-base text-foreground/60 font-medium">
-                                            $HACK {project.votes === 1 ? 'vote' : 'votes'}
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
+                                </Link>
+                            )
+                        })}
 
                         {/* Show link to full gallery if there are more projects */}
                         {projects.length > 3 && (
