@@ -10,6 +10,7 @@ import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddres
 import { HACKPROOF_IDL } from '@/idl/hackproof'
 import { HACKPROOF_PROGRAM_ID } from '@/contexts/WalletContext'
 import { CheckCircle2, Sparkles, Loader2 } from 'lucide-react'
+import DevnetFaucet from '@/components/DevnetFaucet'
 
 // Metaplex Token Metadata Program ID
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s')
@@ -387,6 +388,8 @@ export default function RegisterPage() {
                     <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2">Register for Hackathon</h1>
                     <p className="text-sm sm:text-base text-foreground/70">Fill in your details to mint your Participant NFT</p>
                 </div>
+
+                <DevnetFaucet />
 
                 <div className="bg-background/80 backdrop-blur-sm border border-foreground/10 rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-12 shadow-xl">
                     <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
