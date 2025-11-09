@@ -2,8 +2,9 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { IPFSClient, createProjectMetadata, ProjectMetadata } from '@shared'
 import { PublicKey } from '@solana/web3.js'
-import { createProjectOnChain, voteOnProjectOnChain } from '@/services/solana-integration'
+import { createProjectOnChain, voteOnProjectOnChain, fetchAllProjects } from '@/services/solana-integration'
 import { HACKPROOF_PROGRAM_ID } from '@/contexts/WalletContext'
+import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 
 export interface Project {
     id: string
@@ -45,12 +46,15 @@ interface ProjectsContextType {
     getUserProject: (walletAddress: string) => Project | undefined
     hasUserSubmittedProject: (walletAddress: string) => boolean
     isProjectNameTaken: (projectName: string) => boolean
+    refreshProjects: () => Promise<void>
 }
 
 const ProjectsContext = createContext<ProjectsContextType | undefined>(undefined)
 
 export function ProjectsProvider({ children }: { children: ReactNode }) {
     const [projects, setProjects] = useState<Project[]>([])
+    const { connection } = useConnection()
+    const wallet = useWallet()
     // Lazy-initialize IPFS client - only create when needed
     const getClient = useCallback(() => new IPFSClient(), [])
 
@@ -89,24 +93,130 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         })
     }, [])
 
-    // Load project CIDs from localStorage on mount
-    useEffect(() => {
-        const stored = localStorage.getItem('hackproof-project-cids')
-        if (stored) {
-            try {
-                const projectCids: Project[] = JSON.parse(stored)
-                setProjects(projectCids)
-                // Load metadata for each project
-                projectCids.forEach(project => {
-                    if (!project.cachedMetadata) {
-                        loadProjectMetadata(project.id)
+    // Fetch all projects from blockchain and load metadata from IPFS
+    const loadAllProjects = useCallback(async () => {
+        try {
+            console.log('Fetching all projects from Solana blockchain...')
+            const blockchainProjects = await fetchAllProjects(connection, wallet.wallet || undefined)
+            
+            if (blockchainProjects.length === 0) {
+                console.log('No projects found on blockchain, checking localStorage...')
+                // Fallback to localStorage if blockchain is empty
+                const stored = localStorage.getItem('hackproof-project-cids')
+                if (stored) {
+                    try {
+                        const projectCids: Project[] = JSON.parse(stored)
+                        setProjects(projectCids)
+                        projectCids.forEach(project => {
+                            if (!project.cachedMetadata) {
+                                loadProjectMetadata(project.id)
+                            }
+                        })
+                    } catch (e) {
+                        console.error('Failed to load projects from localStorage:', e)
+                    }
+                }
+                return
+            }
+
+            console.log(`Found ${blockchainProjects.length} projects on blockchain`)
+            const client = getClient()
+            
+            // Convert blockchain projects to our Project format
+            const projectsWithMetadata: Project[] = await Promise.all(
+                blockchainProjects.map(async (bp) => {
+                    // Extract IPFS CID from submissionUri
+                    // submissionUri format: https://gateway.pinata.cloud/ipfs/{cid}
+                    let metadataCid = ''
+                    if (bp.submissionUri) {
+                        const match = bp.submissionUri.match(/ipfs\/([a-zA-Z0-9]+)/)
+                        if (match) {
+                            metadataCid = match[1]
+                        }
+                    }
+                    
+                    // Try to find metadata CID in localStorage (for projects created but not yet submitted)
+                    // Check if we have this project in localStorage with metadata
+                    let cachedMetadata: Project['cachedMetadata'] | undefined
+                    const stored = localStorage.getItem('hackproof-project-cids')
+                    if (stored) {
+                        try {
+                            const localProjects: Project[] = JSON.parse(stored)
+                            const localProject = localProjects.find(p => p.projectPda === bp.projectPda || p.owner === bp.creator)
+                            if (localProject && localProject.cachedMetadata) {
+                                cachedMetadata = localProject.cachedMetadata
+                                metadataCid = localProject.metadataCid
+                            }
+                        } catch (e) {
+                            // Ignore localStorage parse errors
+                        }
+                    }
+                    
+                    // If we have a metadata CID, try to load from IPFS
+                    if (metadataCid && !cachedMetadata) {
+                        try {
+                            const metadata = await client.getMetadata(metadataCid) as ProjectMetadata
+                            cachedMetadata = {
+                                name: metadata.name.replace('HackProof Project: ', ''),
+                                description: metadata.description,
+                                teamMembers: metadata.properties.teamMembers || [],
+                                githubRepo: metadata.properties.githubRepo || bp.githubRepo,
+                                image: metadata.image
+                            }
+                        } catch (error) {
+                            console.error(`Failed to load metadata for project ${bp.name}:`, error)
+                        }
+                    }
+                    
+                    // Use on-chain data as fallback if no metadata loaded
+                    if (!cachedMetadata) {
+                        cachedMetadata = {
+                            name: bp.name,
+                            description: bp.description,
+                            teamMembers: [],
+                            githubRepo: bp.githubRepo,
+                            image: '' // No image from on-chain data
+                        }
+                    }
+                    
+                    return {
+                        id: bp.projectPda, // Use PDA as ID
+                        metadataCid: metadataCid || bp.projectPda, // Use PDA if no CID
+                        votes: bp.totalVotesReceived,
+                        owner: bp.creator,
+                        createdAt: bp.createdAt * 1000, // Convert to milliseconds
+                        projectPda: bp.projectPda,
+                        cachedMetadata
                     }
                 })
-            } catch (e) {
-                console.error('Failed to load projects:', e)
+            )
+            
+            setProjects(projectsWithMetadata)
+            console.log(`Loaded ${projectsWithMetadata.length} projects with metadata`)
+        } catch (error) {
+            console.error('Error loading all projects:', error)
+            // Fallback to localStorage on error
+            const stored = localStorage.getItem('hackproof-project-cids')
+            if (stored) {
+                try {
+                    const projectCids: Project[] = JSON.parse(stored)
+                    setProjects(projectCids)
+                    projectCids.forEach(project => {
+                        if (!project.cachedMetadata) {
+                            loadProjectMetadata(project.id)
+                        }
+                    })
+                } catch (e) {
+                    console.error('Failed to load projects from localStorage:', e)
+                }
             }
         }
-    }, [loadProjectMetadata])
+    }, [connection, wallet.wallet, getClient, loadProjectMetadata])
+
+    // Load all projects on mount and when connection changes
+    useEffect(() => {
+        loadAllProjects()
+    }, [loadAllProjects])
 
     // Save project CIDs to localStorage whenever they change
     useEffect(() => {
@@ -254,7 +364,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
 
             // Step 5: Create project with IPFS CID and Solana data
             const newProject: Project = {
-                id: `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                id: projectPda || `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 metadataCid,
                 votes: 0,
                 owner: projectData.owner,
@@ -270,7 +380,19 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
                 }
             }
 
-            setProjects(prev => [...prev, newProject])
+            setProjects(prev => {
+                // Check if project already exists (from blockchain fetch)
+                const existing = prev.find(p => p.projectPda === projectPda)
+                if (existing) {
+                    // Update existing project with new metadata
+                    return prev.map(p => p.projectPda === projectPda ? newProject : p)
+                }
+                return [...prev, newProject]
+            })
+            
+            // Reload all projects from blockchain to ensure everyone sees it
+            // Note: loadAllProjects will be called automatically on next render
+            
             return newProject.id
         } catch (error: any) {
             console.error('Failed to upload project to IPFS:', error)
@@ -342,7 +464,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
     }
 
     return (
-        <ProjectsContext.Provider value={{ projects, addProject, voteOnProject, loadProjectMetadata, getUserProject, hasUserSubmittedProject, isProjectNameTaken }}>
+        <ProjectsContext.Provider value={{ projects, addProject, voteOnProject, loadProjectMetadata, getUserProject, hasUserSubmittedProject, isProjectNameTaken, refreshProjects: loadAllProjects }}>
             {children}
         </ProjectsContext.Provider>
     )

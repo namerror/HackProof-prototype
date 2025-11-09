@@ -205,3 +205,63 @@ export async function getVotingTokenBalance(
     }
 }
 
+/**
+ * Fetch all projects from the Solana blockchain
+ * Returns array of project data with PDAs and on-chain data
+ */
+export async function fetchAllProjects(
+    connection: Connection,
+    wallet?: any
+): Promise<Array<{
+    projectPda: string
+    name: string
+    description: string
+    githubRepo: string
+    creator: string
+    totalVotesReceived: number
+    submitted: boolean
+    submissionUri?: string
+    createdAt: number
+}>> {
+    try {
+        // Create a minimal provider for read-only operations
+        // Use a dummy keypair if no wallet provided
+        const { Keypair } = await import('@solana/web3.js')
+        const dummyWallet = wallet || {
+            publicKey: Keypair.generate().publicKey,
+            signTransaction: async (tx: any) => tx,
+            signAllTransactions: async (txs: any[]) => txs,
+        }
+        
+        const program = getProgram(connection, dummyWallet)
+        
+        // Fetch all Project accounts using Anchor's account methods
+        const projectAccounts = await program.account.project.all()
+        
+        const projects = projectAccounts.map(({ account, publicKey }) => {
+            try {
+                return {
+                    projectPda: publicKey.toString(),
+                    name: account.name,
+                    description: account.description,
+                    githubRepo: account.githubRepo,
+                    creator: account.creator.toString(),
+                    totalVotesReceived: Number(account.totalVotesReceived),
+                    submitted: account.submitted,
+                    submissionUri: account.submissionUri || undefined,
+                    createdAt: Number(account.createdAt),
+                }
+            } catch (error) {
+                console.error('Error parsing project account:', error)
+                return null
+            }
+        }).filter((p): p is NonNullable<typeof p> => p !== null)
+
+        return projects
+    } catch (error) {
+        console.error('Error fetching all projects from Solana:', error)
+        // Fallback: return empty array if blockchain fetch fails
+        return []
+    }
+}
+
