@@ -267,6 +267,10 @@ export default function RegisterPage() {
             
             console.log('Metadata CID:', metadataCid)
             console.log('Metadata URI:', metadataUri)
+            // Force page reload to refresh Navigation token balance
+            setTimeout(() => {
+                window.location.reload()
+            }, 1000)
         } catch (error: any) {
             console.error('Error in registration process:', error)
             const errorMessage = error?.message || 'Unknown error occurred'
