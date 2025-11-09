@@ -88,15 +88,32 @@ export default function RegisterPage() {
 
         try {
             // Register participant on Solana blockchain (on-chain only, no IPFS)
+            setUploadProgress('Checking wallet balance...')
+            
+            // Check SOL balance before attempting registration
+            if (!wallet || !publicKey) {
+                throw new Error('Wallet not connected')
+            }
+            
+            const balance = await connection.getBalance(publicKey)
+            const minRequiredSol = 0.1 // ~0.1 SOL should be enough for registration (rent + fees)
+            const balanceInSol = balance / 1e9 // Convert lamports to SOL
+            
+            if (balanceInSol < minRequiredSol) {
+                throw new Error(
+                    `Insufficient SOL balance. You need at least ${minRequiredSol} SOL to register.\n\n` +
+                    `Current balance: ${balanceInSol.toFixed(4)} SOL\n\n` +
+                    `Please use the Devnet Faucet above to get free SOL, or request SOL from:\n` +
+                    `https://faucet.solana.com/`
+                )
+            }
+            
             setUploadProgress('Registering on Solana...')
             
             // Use empty string for metadata URI since we're storing everything on-chain
             const metadataUri = ''
             let signature: string | null = null
             try {
-                if (!wallet || !publicKey) {
-                    throw new Error('Wallet not connected')
-                }
 
                 // Ensure hackathon is initialized on-chain before proceeding
                 const initialized = await isHackathonInitialized(connection)
@@ -230,6 +247,20 @@ export default function RegisterPage() {
                 console.error('Solana registration failed:', solanaError)
                 // Surface the error and stop; we shouldn't mark success without tokens
                 const errorMessage = solanaError?.message || 'Unknown error'
+                
+                // Check for insufficient funds error
+                if (errorMessage.includes('debit') && errorMessage.includes('no record of a prior credit') ||
+                    errorMessage.includes('insufficient funds') || errorMessage.includes('Insufficient')) {
+                    const balance = await connection.getBalance(publicKey).catch(() => 0)
+                    const balanceInSol = balance / 1e9
+                    throw new Error(
+                        `Insufficient SOL balance to complete registration.\n\n` +
+                        `Current balance: ${balanceInSol.toFixed(4)} SOL\n` +
+                        `Required: ~0.1 SOL (for transaction fees and rent)\n\n` +
+                        `Please use the Devnet Faucet above to get free SOL, or visit:\n` +
+                        `https://faucet.solana.com/`
+                    )
+                }
                 
                 // Check for Phantom trust/security errors
                 if (errorMessage.includes('trust') || errorMessage.includes('unsafe') || errorMessage.includes('not trusted') || 
