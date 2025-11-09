@@ -1,7 +1,6 @@
 'use client'
 import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useEffect, useState } from 'react'
 import { Rocket } from 'lucide-react'
 
@@ -68,9 +67,11 @@ export default function Navigation() {
                             </div>
                         )}
                     </div>
-                    <div className="flex items-center gap-4">
-                        <WalletMultiButton className="!bg-[#00ff9f] !text-[#0f0f0f] !rounded-lg !px-4 !py-2 !font-semibold hover:!bg-[#00cc7f] transition-all !font-mono" />
-                    </div>
+                    {connected && (
+                        <div className="text-sm text-[#00ff9f]/70 font-mono">
+                            {connected ? 'Connected' : ''}
+                        </div>
+                    )}
                 </div>
             </div>
         </nav>

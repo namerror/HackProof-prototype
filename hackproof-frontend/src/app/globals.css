@@ -225,6 +225,8 @@ button:hover::before,
     0 4px 6px -2px rgba(0, 255, 159, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
   border: 1px solid rgba(0, 255, 159, 0.3) !important;
+  cursor: pointer !important;
+  position: relative !important;
 }
 
 /* Add padding inside button for text content */
@@ -425,7 +427,6 @@ a {
   color: #00ff9f !important;
   max-width: 400px !important;
   padding: 0 !important;
-  overflow: hidden !important;
 }
 
 .wallet-adapter-modal-title {
@@ -487,6 +488,7 @@ a {
 .wallet-adapter-modal-list-item {
   margin: 0 !important;
   padding: 0 !important;
+  position: relative !important;
 }
 
 .wallet-adapter-modal-list-more {
@@ -501,7 +503,7 @@ a {
   padding-top: 0.5rem !important;
 }
 
-/* Wallet buttons inside the modal */
+/* Wallet buttons inside the modal - minimal styling to avoid blocking clicks */
 .wallet-adapter-modal-list-item .wallet-adapter-button {
   background: rgba(0, 255, 159, 0.1) !important;
   border: 1px solid rgba(0, 255, 159, 0.3) !important;
@@ -521,8 +523,11 @@ a {
   text-align: left !important;
   letter-spacing: 0.025em !important;
   position: relative !important;
-  overflow: hidden !important;
   margin: 0 !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
 }
 
 .wallet-adapter-modal-list-item .wallet-adapter-button:hover {

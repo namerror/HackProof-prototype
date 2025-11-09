@@ -119,9 +119,13 @@ export default function ProjectPage() {
         )
     }
 
-    const projectUrl = typeof window !== 'undefined'
-        ? `${window.location.origin}/project/${project.id}`
-        : ''
+    const [projectUrl, setProjectUrl] = useState('')
+    
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setProjectUrl(`${window.location.origin}/project/${project.id}`)
+        }
+    }, [project.id])
 
     return (
         <main className="min-h-screen px-4 py-8 sm:py-12">

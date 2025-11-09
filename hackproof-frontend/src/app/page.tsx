@@ -1,26 +1,77 @@
 'use client'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
 import { Wallet, CheckCircle2, Coins, Vote, Rocket, Trophy, Link2 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useState, useCallback, useEffect } from 'react'
 
 export default function Home() {
-  const { connected } = useWallet()
-  const [mounted, setMounted] = useState(false)
+  const { connected, publicKey, disconnect, select, wallets, connect } = useWallet()
+  const [isConnecting, setIsConnecting] = useState(false)
+  const [showWalletList, setShowWalletList] = useState(false)
 
+  const handleConnectClick = useCallback(async () => {
+    if (wallets.length === 0) {
+      alert('No wallets available. Please install Phantom or another Solana wallet.')
+      return
+    }
+
+    // Try to connect to Phantom first if available
+    const phantomWallet = wallets.find(w => w.adapter.name === 'Phantom')
+    if (phantomWallet) {
+      try {
+        setIsConnecting(true)
+        await select(phantomWallet.adapter.name as any)
+        // After selecting, connect to the wallet
+        await connect()
+      } catch (error) {
+        console.error('Error connecting to wallet:', error)
+        // If direct connection fails, show wallet list
+        setShowWalletList(true)
+      } finally {
+        setIsConnecting(false)
+      }
+    } else {
+      setShowWalletList(true)
+    }
+  }, [wallets, select, connect])
+
+  const handleWalletSelect = useCallback(async (wallet: typeof wallets[0]) => {
+    try {
+      setIsConnecting(true)
+      await select(wallet.adapter.name as any)
+      // After selecting, connect to the wallet
+      await connect()
+      setShowWalletList(false)
+    } catch (error) {
+      console.error('Error selecting wallet:', error)
+    } finally {
+      setIsConnecting(false)
+    }
+  }, [select, connect])
+
+  const handleDisconnect = useCallback(async () => {
+    try {
+      await disconnect()
+    } catch (error) {
+      console.error('Error disconnecting wallet:', error)
+    }
+  }, [disconnect])
+
+  // Close wallet list when clicking outside
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    if (showWalletList) {
+      const handleClickOutside = (e: MouseEvent) => {
+        const target = e.target as HTMLElement
+        if (!target.closest('.wallet-list-container')) {
+          setShowWalletList(false)
+        }
+      }
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showWalletList])
 
-  if (!mounted) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        <div className="text-[#00ff9f] font-mono">Loading...</div>
-      </main>
-    )
-  }
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-4 py-8 sm:py-12">
       <div className="max-w-4xl w-full space-y-8 sm:space-y-12">
@@ -48,7 +99,7 @@ export default function Home() {
         >
           <div className="space-y-6 sm:space-y-8">
             <div className="text-center">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold mb-2 font-mono text-[#00ff9f]">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold mb-2 font-mono text-[#00ff9f] px-4 py-2">
                 Connect Your Wallet
               </h2>
             </div>
@@ -118,16 +169,47 @@ export default function Home() {
             </div>
 
             {/* Connect Wallet Button */}
-            <div className="flex justify-center">
-              <div onClick={(e) => {
-                try {
-                  // Button will handle the click
-                } catch (error) {
-                  console.error('Wallet connection error:', error);
-                }
-              }}>
-                <WalletMultiButton />
-              </div>
+            <div className="flex justify-center relative wallet-list-container">
+              {!connected ? (
+                <>
+                  <button
+                    onClick={handleConnectClick}
+                    disabled={isConnecting}
+                    className="px-8 py-4 bg-gradient-to-r from-[#00ff9f] to-[#00cc7f] text-[#0f0f0f] rounded font-semibold shadow-xl hover:shadow-[0_0_30px_rgba(0,255,159,0.5)] hover:from-[#00cc7f] hover:to-[#00ff9f] transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-[#00ff9f]/50 font-mono"
+                  >
+                    {isConnecting ? 'Connecting...' : 'Select Wallet'}
+                  </button>
+                  
+                  {showWalletList && wallets.length > 0 && (
+                    <div className="absolute top-full mt-2 bg-[#1a1a1a] border border-[#00ff9f]/30 rounded p-4 z-50 min-w-[200px]">
+                      <div className="text-sm text-[#00ff9f]/80 mb-2 font-mono">Select a wallet:</div>
+                      <div className="space-y-2">
+                        {wallets.map((wallet) => (
+                          <button
+                            key={wallet.adapter.name}
+                            onClick={() => handleWalletSelect(wallet)}
+                            className="w-full px-4 py-2 bg-[#00ff9f]/10 hover:bg-[#00ff9f]/20 border border-[#00ff9f]/30 rounded text-left text-[#00ff9f] font-mono text-sm transition-all cursor-pointer"
+                          >
+                            {wallet.adapter.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="px-6 py-3 bg-[#1a1a1a]/50 backdrop-blur-sm text-[#00ff9f] rounded font-semibold border border-[#00ff9f]/20 font-mono">
+                    {publicKey ? `${publicKey.toString().slice(0, 4)}...${publicKey.toString().slice(-4)}` : 'Connected'}
+                  </div>
+                  <button
+                    onClick={handleDisconnect}
+                    className="px-4 py-2 text-sm text-[#00ff9f]/70 hover:text-[#00ff9f] font-mono underline"
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Action Links - Shows when wallet is connected */}
