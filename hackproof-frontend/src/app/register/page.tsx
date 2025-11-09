@@ -11,7 +11,7 @@ import { HACKPROOF_IDL } from '@/idl/hackproof'
 import { HACKPROOF_PROGRAM_ID } from '@/contexts/WalletContext'
 import { CheckCircle2, Sparkles, Loader2 } from 'lucide-react'
 import DevnetFaucet from '@/components/DevnetFaucet'
-import { isHackathonInitialized } from '@/services/solana-integration'
+import { isHackathonInitialized, getVotingTokenBalance } from '@/services/solana-integration'
 
 // Metaplex Token Metadata Program ID
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s')
@@ -213,17 +213,36 @@ export default function RegisterPage() {
                 )
 
 
-                // Pre-instruction: create ATA for the NFT so mint_to succeeds inside program
-                const preInstructions = [
-                    createAssociatedTokenAccountInstruction(
-                        publicKey, // payer
-                        nftTokenAccount,
-                        publicKey, // owner
-                        nftMint.publicKey,
-                        TOKEN_PROGRAM_ID,
-                        ASSOCIATED_TOKEN_PROGRAM_ID
+                // Pre-instructions: ensure ATAs exist so mint/transfer succeed inside program
+                const preInstructions = [] as any[]
+                // NFT ATA (always create; if exists, instruction will fail, so check first)
+                const nftAtaInfo = await connection.getAccountInfo(nftTokenAccount)
+                if (!nftAtaInfo) {
+                    preInstructions.push(
+                        createAssociatedTokenAccountInstruction(
+                            publicKey, // payer
+                            nftTokenAccount,
+                            publicKey, // owner
+                            nftMint.publicKey,
+                            TOKEN_PROGRAM_ID,
+                            ASSOCIATED_TOKEN_PROGRAM_ID
+                        )
                     )
-                ]
+                }
+                // Voting token ATA (create if missing to avoid relying on program's init_if_needed)
+                const votingAtaInfo = await connection.getAccountInfo(votingTokenAccount)
+                if (!votingAtaInfo) {
+                    preInstructions.push(
+                        createAssociatedTokenAccountInstruction(
+                            publicKey,
+                            votingTokenAccount,
+                            publicKey,
+                            votingTokenMintPda,
+                            TOKEN_PROGRAM_ID,
+                            ASSOCIATED_TOKEN_PROGRAM_ID
+                        )
+                    )
+                }
 
                 signature = await program.methods
                   .registerParticipant(formData.name, metadataUri)
@@ -250,12 +269,31 @@ export default function RegisterPage() {
 
                 setTxSignature(signature)
                 console.log('Solana transaction signature:', signature)
+                // Confirm transaction and then poll for token balance to reflect minting
+                try {
+                    await connection.confirmTransaction(signature, 'confirmed')
+                } catch (e) {
+                    console.warn('confirmTransaction warning:', e)
+                }
+
+                // Poll for voting token balance until non-zero (max ~15s)
+                let attempts = 0
+                let lastBalance = 0
+                while (attempts < 10) {
+                    const bal = await getVotingTokenBalance(connection, publicKey)
+                    lastBalance = bal
+                    if (bal > 0) break
+                    await new Promise(res => setTimeout(res, 1500))
+                    attempts++
+                }
+                if (lastBalance === 0) {
+                    throw new Error('Registration transaction sent but voting tokens not detected yet. Please retry or check your SOL balance and try again.')
+                }
             } catch (solanaError: any) {
                 console.error('Solana registration failed:', solanaError)
-                // Continue with IPFS registration even if Solana fails
-                // This allows the system to work even if Solana is down
+                // Surface the error and stop; we shouldn't mark success without tokens
                 const errorMessage = solanaError?.message || 'Unknown error'
-                console.warn(`Solana registration failed: ${errorMessage}. Continuing with IPFS-only registration.`)
+                throw new Error(`Solana registration failed: ${errorMessage}`)
             }
             
             // Step 6: Register participant locally with wallet address -> IPFS CID mapping
@@ -267,7 +305,7 @@ export default function RegisterPage() {
             
             console.log('Metadata CID:', metadataCid)
             console.log('Metadata URI:', metadataUri)
-            // Force page reload to refresh Navigation token balance
+            // Optional: Force page reload to refresh Navigation token balance
             setTimeout(() => {
                 window.location.reload()
             }, 1000)
