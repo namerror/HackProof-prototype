@@ -11,19 +11,6 @@ import {
 import { clusterApiUrl, PublicKey } from '@solana/web3.js';
 import { useMemo, useEffect, useState } from 'react';
 
-// Type declaration for window.solana
-declare global {
-  interface Window {
-    solana?: {
-      isPhantom?: boolean;
-      isSolflare?: boolean;
-      publicKey?: any;
-      connect?: () => Promise<any>;
-      disconnect?: () => Promise<void>;
-    };
-  }
-}
-
 export const HACKPROOF_PROGRAM_ID = new PublicKey("41MbmvmGCzNeJbJyMQry5uD4eVagxKccMgNA533rKWqs")
 
 export function WalletContextProvider({ children }: { children: React.ReactNode }) {
@@ -37,7 +24,8 @@ export function WalletContextProvider({ children }: { children: React.ReactNode 
     // Only add adapters if we're in the browser
     if (typeof window !== 'undefined') {
       // Check if Phantom is installed
-      if (window.solana && window.solana.isPhantom) {
+      const solana = (window as any).solana;
+      if (solana && solana.isPhantom) {
         adapters.push(new PhantomWalletAdapter());
       } else {
         // Still add it, it will show install prompt
