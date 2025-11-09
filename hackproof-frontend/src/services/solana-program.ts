@@ -87,17 +87,13 @@ export async function registerParticipantOnChain(
     const nftTokenAccount = getAssociatedTokenAddressSync(
       nftMintKeypair.publicKey,
       wallet.publicKey,
-      false,
-      TOKEN_PROGRAM_ID,
-      ASSOCIATED_TOKEN_PROGRAM_ID
+      false
     )
 
     const votingTokenAccount = getAssociatedTokenAddressSync(
       votingTokenMintPda,
       wallet.publicKey,
-      false,
-      TOKEN_PROGRAM_ID,
-      ASSOCIATED_TOKEN_PROGRAM_ID
+      false
     )
 
     // Pre-instruction: ensure NFT ATA exists (the on-chain program does not create it)
@@ -107,9 +103,7 @@ export async function registerParticipantOnChain(
         wallet.publicKey, // payer
         nftTokenAccount,
         wallet.publicKey, // owner (authority)
-        nftMintKeypair.publicKey,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
+        nftMintKeypair.publicKey
       )
     )
 

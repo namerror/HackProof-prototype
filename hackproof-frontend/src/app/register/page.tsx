@@ -198,18 +198,14 @@ export default function RegisterPage() {
                 const nftTokenAccount = getAssociatedTokenAddressSync(
                     nftMint.publicKey,
                     publicKey,
-                    false,
-                    TOKEN_PROGRAM_ID,
-                    ASSOCIATED_TOKEN_PROGRAM_ID
+                    false
                 )
 
                 // Derive voting token account (ATA)
                 const votingTokenAccount = getAssociatedTokenAddressSync(
                     votingTokenMintPda,
                     publicKey,
-                    false,
-                    TOKEN_PROGRAM_ID,
-                    ASSOCIATED_TOKEN_PROGRAM_ID
+                    false
                 )
 
 
@@ -223,9 +219,7 @@ export default function RegisterPage() {
                             publicKey, // payer
                             nftTokenAccount,
                             publicKey, // owner
-                            nftMint.publicKey,
-                            TOKEN_PROGRAM_ID,
-                            ASSOCIATED_TOKEN_PROGRAM_ID
+                            nftMint.publicKey
                         )
                     )
                 }
@@ -237,9 +231,7 @@ export default function RegisterPage() {
                             publicKey,
                             votingTokenAccount,
                             publicKey,
-                            votingTokenMintPda,
-                            TOKEN_PROGRAM_ID,
-                            ASSOCIATED_TOKEN_PROGRAM_ID
+                            votingTokenMintPda
                         )
                     )
                 }

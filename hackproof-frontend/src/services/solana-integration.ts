@@ -115,9 +115,7 @@ export async function createProjectOnChain(
         const projectTokenAccount = getAssociatedTokenAddressSync(
             votingTokenMintPda,
             projectPda,
-            true,
-            TOKEN_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
+            true
         )
 
         // Call the Solana program
@@ -179,17 +177,13 @@ export async function voteOnProjectOnChain(
         const voterTokenAccount = getAssociatedTokenAddressSync(
             votingTokenMintPda,
             voterPublicKey,
-            false,
-            TOKEN_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
+            false
         )
 
         const projectTokenAccount = getAssociatedTokenAddressSync(
             votingTokenMintPda,
             projectPda,
-            true,
-            TOKEN_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
+            true
         )
 
         // Get voter's participant info for checking if they have a project
@@ -211,9 +205,7 @@ export async function voteOnProjectOnChain(
             const voterProjectTokenAccount = getAssociatedTokenAddressSync(
                 votingTokenMintPda,
                 voterParticipant.project,
-                true,
-                TOKEN_PROGRAM_ID,
-                ASSOCIATED_TOKEN_PROGRAM_ID
+                true
             )
 
             remainingAccounts.push({
@@ -262,9 +254,7 @@ export async function getVotingTokenBalance(
         const userTokenAccount = getAssociatedTokenAddressSync(
             votingTokenMintPda,
             userPublicKey,
-            false,
-            TOKEN_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
+            false
         )
 
         try {
